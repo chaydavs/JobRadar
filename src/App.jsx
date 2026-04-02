@@ -82,10 +82,6 @@ const BONUS_KEYWORDS = [
   "supabase", "postgresql", "startup", "no sponsorship required"
 ];
 
-const NEGATIVE_KEYWORDS = [
-  "us citizen", "u.s. citizen", "citizenship required", "clearance",
-  "permanent resident only", "no cpt", "no sponsorship"
-];
 
 function scoreJob(role, company, location, profile) {
   const text = `${role} ${company} ${location}`.toLowerCase();
@@ -152,35 +148,65 @@ function parseJobs(markdown) {
     const applyMatch = row.match(/href="(https:\/\/(?!simplify\.jobs|i\.imgur)[^"]+?)"/);
     const link = applyMatch ? applyMatch[1].split("?utm_source")[0] : "";
 
+    // Extract requirement tags from the row
+    const noSponsorship = row.includes("🛂");
+    const usCitizenOnly = row.includes("🇺🇸");
+    const advancedDegree = row.includes("🎓");
+
+    // Detect education level from role title
+    const roleLower = role.toLowerCase();
+    let eduLevel = "undergrad";
+    if (advancedDegree || /\bph\.?d\b/.test(roleLower) || /\bdoctoral\b/.test(roleLower)) {
+      eduLevel = "phd";
+    } else if (/\bmaster'?s?\b/.test(roleLower) || /\bgraduate\b/.test(roleLower) || /\bm\.?s\.?\b/.test(roleLower)) {
+      eduLevel = "masters";
+    }
+
     // Filter: US only, skip UK/Canada/etc
     const skipLocations = ["UK", "Canada", "France", "Germany", "Japan", "China", "India", "Brazil", "Netherlands", "Ireland", "Singapore", "Australia"];
     if (skipLocations.some(loc => location.includes(loc))) continue;
 
-    jobs.push({ company, role, location, link, age });
+    jobs.push({ company, role, location, link, age, noSponsorship, usCitizenOnly, advancedDegree, eduLevel });
   }
 
   return jobs;
 }
 
-function JobCard({ job, bestProfile, score, matches }) {
-  const profile = RESUME_PROFILES[bestProfile];
-  const isNegative = NEGATIVE_KEYWORDS.some(kw =>
-    `${job.role} ${job.company}`.toLowerCase().includes(kw)
+const EDU_LABELS = { undergrad: "Undergrad", masters: "Master's", phd: "PhD" };
+const EDU_COLORS = { undergrad: "#10B981", masters: "#3B82F6", phd: "#A855F7" };
+
+function RequirementBadge({ label, color, warn }) {
+  return (
+    <span style={{
+      fontSize: "10px",
+      fontFamily: "'JetBrains Mono', monospace",
+      background: color + "22",
+      color: color,
+      padding: "2px 7px",
+      borderRadius: "4px",
+      fontWeight: 600,
+      border: warn ? `1px solid ${color}44` : "none"
+    }}>{label}</span>
   );
+}
+
+function JobCard({ job, bestProfile, score, matches, isApplied, onToggleApplied }) {
+  const profile = RESUME_PROFILES[bestProfile];
 
   return (
     <div style={{
       background: "var(--card-bg)",
       border: "1px solid var(--border)",
-      borderLeft: `4px solid ${profile.color}`,
+      borderLeft: `4px solid ${isApplied ? "#10B981" : profile.color}`,
       borderRadius: "8px",
       padding: "16px 20px",
       marginBottom: "10px",
-      transition: "all 0.2s ease"
+      transition: "all 0.2s ease",
+      opacity: isApplied ? 0.6 : 1
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
         <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px", flexWrap: "wrap" }}>
             <span style={{
               fontFamily: "'JetBrains Mono', monospace",
               fontSize: "11px",
@@ -204,14 +230,10 @@ function JobCard({ job, bestProfile, score, matches }) {
               fontSize: "11px",
               color: "var(--muted)",
             }}>{job.age} ago</span>
-            {isNegative && <span style={{
-              fontSize: "11px",
-              background: "#EF444422",
-              color: "#EF4444",
-              padding: "2px 8px",
-              borderRadius: "4px",
-              fontWeight: 600
-            }}>⚠ may need citizenship</span>}
+            <RequirementBadge label={EDU_LABELS[job.eduLevel]} color={EDU_COLORS[job.eduLevel]} />
+            {job.usCitizenOnly && <RequirementBadge label="US Citizen Only" color="#EF4444" warn />}
+            {job.noSponsorship && <RequirementBadge label="No Sponsorship" color="#F59E0B" warn />}
+            {job.advancedDegree && job.eduLevel === "undergrad" && <RequirementBadge label="Adv. Degree" color="#A855F7" warn />}
           </div>
           <div style={{
             fontFamily: "'Space Grotesk', sans-serif",
@@ -244,20 +266,34 @@ function JobCard({ job, bestProfile, score, matches }) {
             </div>
           )}
         </div>
-        {job.link && (
-          <a href={job.link} target="_blank" rel="noopener noreferrer" style={{
-            background: "var(--accent)",
-            color: "#fff",
-            padding: "8px 16px",
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px", flexShrink: 0 }}>
+          {job.link && (
+            <a href={job.link} target="_blank" rel="noopener noreferrer" style={{
+              background: "var(--accent)",
+              color: "#fff",
+              padding: "8px 16px",
+              borderRadius: "6px",
+              fontSize: "13px",
+              fontWeight: 700,
+              textDecoration: "none",
+              whiteSpace: "nowrap",
+              fontFamily: "'JetBrains Mono', monospace",
+              textAlign: "center"
+            }}>APPLY →</a>
+          )}
+          <button onClick={onToggleApplied} style={{
+            background: isApplied ? "#10B98133" : "var(--surface)",
+            color: isApplied ? "#10B981" : "var(--muted)",
+            border: `1px solid ${isApplied ? "#10B98144" : "var(--border)"}`,
             borderRadius: "6px",
-            fontSize: "13px",
-            fontWeight: 700,
-            textDecoration: "none",
-            whiteSpace: "nowrap",
+            padding: "4px 12px",
+            fontSize: "11px",
+            fontWeight: 600,
+            cursor: "pointer",
             fontFamily: "'JetBrains Mono', monospace",
-            flexShrink: 0
-          }}>APPLY →</a>
-        )}
+            whiteSpace: "nowrap"
+          }}>{isApplied ? "Applied ✓" : "Mark Applied"}</button>
+        </div>
       </div>
     </div>
   );
@@ -270,6 +306,12 @@ function JobMatcher() {
   const [maxAge, setMaxAge] = useState("3");
   const [selectedProfile, setSelectedProfile] = useState("all");
   const [minScore, setMinScore] = useState(15);
+  const [eduFilter, setEduFilter] = useState("undergrad");
+  const [hideNoSponsorship, setHideNoSponsorship] = useState(true);
+  const [applied, setApplied] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("jobRadarApplied") || "{}"); }
+    catch { return {}; }
+  });
   const [lastFetch, setLastFetch] = useState(null);
 
   const fetchJobs = useCallback(async () => {
@@ -309,6 +351,15 @@ function JobMatcher() {
 
   useEffect(() => { fetchJobs(); }, [fetchJobs]);
 
+  const toggleApplied = (jobKey) => {
+    const updated = { ...applied, [jobKey]: !applied[jobKey] };
+    if (!updated[jobKey]) delete updated[jobKey];
+    setApplied(updated);
+    localStorage.setItem("jobRadarApplied", JSON.stringify(updated));
+  };
+
+  const getJobKey = (job) => `${job.company}::${job.role}`;
+
   const ageToNum = (age) => {
     const m = age.match(/(\d+)/);
     return m ? parseInt(m[1]) : 999;
@@ -318,6 +369,8 @@ function JobMatcher() {
     if (maxAge !== "all" && ageToNum(j.age) > parseInt(maxAge)) return false;
     if (selectedProfile !== "all" && j.bestProfile !== selectedProfile) return false;
     if (j.score < minScore) return false;
+    if (eduFilter !== "all" && j.eduLevel !== eduFilter) return false;
+    if (hideNoSponsorship && (j.noSponsorship || j.usCitizenOnly)) return false;
     return true;
   });
 
@@ -404,6 +457,27 @@ function JobMatcher() {
             ))}
           </div>
 
+          <div style={{ display: "flex", gap: "4px", background: "var(--surface)", borderRadius: "8px", padding: "3px", flexShrink: 0 }}>
+            {[["all", "All Levels"], ["undergrad", "Undergrad"], ["masters", "Master's"], ["phd", "PhD"]].map(([val, label]) => (
+              <button key={val} onClick={() => setEduFilter(val)} style={{
+                background: eduFilter === val ? EDU_COLORS[val] || "#444" : "transparent",
+                color: eduFilter === val ? "#fff" : "var(--text-secondary)",
+                border: "none", borderRadius: "6px", padding: "6px 10px",
+                fontSize: "11px", fontWeight: 600, cursor: "pointer",
+                fontFamily: "'JetBrains Mono', monospace"
+              }}>{label}</button>
+            ))}
+          </div>
+
+          <button onClick={() => setHideNoSponsorship(!hideNoSponsorship)} style={{
+            background: hideNoSponsorship ? "#EF444433" : "var(--surface)",
+            color: hideNoSponsorship ? "#EF4444" : "var(--text-secondary)",
+            border: `1px solid ${hideNoSponsorship ? "#EF444444" : "var(--border)"}`,
+            borderRadius: "6px", padding: "6px 12px",
+            fontSize: "11px", fontWeight: 600, cursor: "pointer",
+            fontFamily: "'JetBrains Mono', monospace", flexShrink: 0
+          }}>{hideNoSponsorship ? "Showing: Sponsorship OK" : "Filter: Citizenship"}</button>
+
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <span style={{ fontSize: "12px", color: "var(--muted)", fontFamily: "'JetBrains Mono', monospace" }}>Min:</span>
             <input type="range" min="0" max="50" value={minScore} onChange={e => setMinScore(parseInt(e.target.value))}
@@ -469,6 +543,19 @@ function JobMatcher() {
             </div>
             <div style={{ fontSize: "11px", color: "var(--muted)", fontFamily: "'JetBrains Mono', monospace" }}>remote friendly</div>
           </div>
+          <div style={{
+            background: "var(--surface)",
+            border: "1px solid var(--border)",
+            borderRadius: "8px",
+            padding: "12px 20px",
+            flex: 1,
+            minWidth: "120px"
+          }}>
+            <div style={{ fontSize: "24px", fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", color: "#8B5CF6" }}>
+              {filtered.filter(j => applied[getJobKey(j)]).length}
+            </div>
+            <div style={{ fontSize: "11px", color: "var(--muted)", fontFamily: "'JetBrains Mono', monospace" }}>applied</div>
+          </div>
         </div>
 
         {/* Job List */}
@@ -488,7 +575,9 @@ function JobMatcher() {
         ) : (
           <div>
             {filtered.map((job, i) => (
-              <JobCard key={i} job={job} bestProfile={job.bestProfile} score={job.score} matches={job.matches} />
+              <JobCard key={i} job={job} bestProfile={job.bestProfile} score={job.score} matches={job.matches}
+                isApplied={!!applied[getJobKey(job)]}
+                onToggleApplied={() => toggleApplied(getJobKey(job))} />
             ))}
             {filtered.length === 0 && (
               <div style={{ textAlign: "center", padding: "40px", color: "var(--muted)", fontFamily: "'JetBrains Mono', monospace" }}>
