@@ -1,0 +1,28 @@
+name: Daily Job Radar
+
+on:
+  schedule:
+    # Runs at 8:00 AM ET (12:00 UTC) every day
+    - cron: '0 12 * * *'
+  workflow_dispatch: # Manual trigger
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run Job Radar
+        env:
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
+          MAX_AGE_DAYS: "2"
+          MIN_SCORE: "15"
+        run: python scripts/daily_digest.py
