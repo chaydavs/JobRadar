@@ -1,4 +1,37 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Component } from "react";
+
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          background: "#0f0f1a", color: "#e8e8f0", minHeight: "100vh",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          flexDirection: "column", gap: "16px", padding: "24px", textAlign: "center",
+          fontFamily: "'Space Grotesk', sans-serif"
+        }}>
+          <div style={{ fontSize: "48px" }}>X</div>
+          <h2 style={{ fontSize: "20px", fontWeight: 700 }}>Something broke</h2>
+          <p style={{ color: "#a0a0b8", fontSize: "14px", maxWidth: "400px" }}>
+            The job data format may have changed. Try refreshing.
+          </p>
+          <button onClick={() => window.location.reload()} style={{
+            background: "#8B5CF6", color: "#fff", border: "none", borderRadius: "8px",
+            padding: "10px 24px", fontSize: "14px", fontWeight: 700, cursor: "pointer"
+          }}>Reload</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const RESUME_PROFILES = {
   "AI/ML Engineer": {
@@ -230,7 +263,7 @@ function JobCard({ job, bestProfile, score, matches }) {
   );
 }
 
-export default function JobMatcher() {
+function JobMatcher() {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -331,12 +364,12 @@ export default function JobMatcher() {
         {/* Controls */}
         <div style={{
           display: "flex",
-          gap: "12px",
+          gap: "10px",
           marginBottom: "20px",
           flexWrap: "wrap",
           alignItems: "center"
         }}>
-          <div style={{ display: "flex", gap: "4px", background: "var(--surface)", borderRadius: "8px", padding: "3px" }}>
+          <div style={{ display: "flex", gap: "4px", background: "var(--surface)", borderRadius: "8px", padding: "3px", flexShrink: 0 }}>
             {["1", "2", "3", "7", "all"].map(v => (
               <button key={v} onClick={() => setMaxAge(v)} style={{
                 background: maxAge === v ? "var(--accent)" : "transparent",
@@ -352,7 +385,7 @@ export default function JobMatcher() {
             ))}
           </div>
 
-          <div style={{ display: "flex", gap: "4px", background: "var(--surface)", borderRadius: "8px", padding: "3px" }}>
+          <div style={{ display: "flex", gap: "4px", background: "var(--surface)", borderRadius: "8px", padding: "3px", flexWrap: "wrap", flexShrink: 0 }}>
             <button onClick={() => setSelectedProfile("all")} style={{
               background: selectedProfile === "all" ? "#444" : "transparent",
               color: selectedProfile === "all" ? "#fff" : "var(--text-secondary)",
@@ -466,5 +499,13 @@ export default function JobMatcher() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <ErrorBoundary>
+      <JobMatcher />
+    </ErrorBoundary>
   );
 }
