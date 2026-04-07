@@ -1,87 +1,9 @@
-import { useState, useEffect, useCallback, Component } from "react";
-
-class ErrorBoundary extends Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error };
-  }
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div style={{
-          background: "#0f0f1a", color: "#e8e8f0", minHeight: "100vh",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          flexDirection: "column", gap: "16px", padding: "24px", textAlign: "center",
-          fontFamily: "'Space Grotesk', sans-serif"
-        }}>
-          <div style={{ fontSize: "48px" }}>X</div>
-          <h2 style={{ fontSize: "20px", fontWeight: 700 }}>Something broke</h2>
-          <p style={{ color: "#a0a0b8", fontSize: "14px", maxWidth: "400px" }}>
-            The job data format may have changed. Try refreshing.
-          </p>
-          <button onClick={() => window.location.reload()} style={{
-            background: "#8B5CF6", color: "#fff", border: "none", borderRadius: "8px",
-            padding: "10px 24px", fontSize: "14px", fontWeight: 700, cursor: "pointer"
-          }}>Reload</button>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
-
-const RESUME_PROFILES = {
-  "AI/ML Engineer": {
-    color: "#8B5CF6",
-    keywords: [
-      "machine learning", "ml", "ai", "artificial intelligence", "deep learning",
-      "neural network", "nlp", "natural language", "tensorflow", "pytorch",
-      "scikit-learn", "computer vision", "llm", "large language model",
-      "reinforcement learning", "generative ai", "agentic", "claude",
-      "openai", "model", "inference", "training", "fine-tune", "prompt",
-      "python", "classification", "regression", "transformer", "embedding",
-      "spacy", "hugging face", "research", "perception", "robotics",
-      "autonomous", "agent", "rl", "gpt", "diffusion", "vision"
-    ],
-    weight: 1.0
-  },
-  "BI & Operations": {
-    color: "#F59E0B",
-    keywords: [
-      "data analyst", "analytics", "business intelligence", "power bi",
-      "tableau", "sql", "dashboard", "reporting", "crm", "salesforce",
-      "operations", "etl", "pipeline", "data engineer", "database",
-      "postgresql", "data warehouse", "bi", "excel", "visualization",
-      "metrics", "kpi", "stakeholder", "admissions", "recruitment",
-      "process", "automation", "n8n", "make", "workflow", "integration",
-      "api", "webhook", "supabase", "data governance", "quality"
-    ],
-    weight: 0.9
-  },
-  "Data Science Research": {
-    color: "#10B981",
-    keywords: [
-      "data science", "data scientist", "research", "statistical",
-      "statistics", "hypothesis", "monte carlo", "optimization",
-      "regression", "r", "matlab", "scipy", "numpy", "pandas",
-      "geospatial", "satellite", "computational", "modeling",
-      "simulation", "numerical", "analysis", "quantitative",
-      "experiment", "inference", "bayesian", "probability",
-      "feature engineering", "prediction", "forecasting", "time series",
-      "bioinformatics", "genomics", "scientific", "publication"
-    ],
-    weight: 0.95
-  }
-};
-
-const BONUS_KEYWORDS = [
-  "remote", "python", "aws", "docker", "flask", "api",
-  "supabase", "postgresql", "startup", "no sponsorship required"
-];
-
+import { useState, useEffect, useCallback } from "react";
+import ErrorBoundary from "./components/ErrorBoundary";
+import JobCard from "./components/JobCard";
+import FilterBar from "./components/FilterBar";
+import ApplicationTracker from "./components/ApplicationTracker";
+import { RESUME_PROFILES, BONUS_KEYWORDS } from "./config/resumeProfiles";
 
 function scoreJob(role, company, location, profile) {
   const text = `${role} ${company} ${location}`.toLowerCase();
@@ -148,12 +70,10 @@ function parseJobs(markdown) {
     const applyMatch = row.match(/href="(https:\/\/(?!simplify\.jobs|i\.imgur)[^"]+?)"/);
     const link = applyMatch ? applyMatch[1].split("?utm_source")[0] : "";
 
-    // Extract requirement tags from the row
     const noSponsorship = row.includes("🛂");
     const usCitizenOnly = row.includes("🇺🇸");
     const advancedDegree = row.includes("🎓");
 
-    // Detect education level from role title
     const roleLower = role.toLowerCase();
     let eduLevel = "undergrad";
     if (advancedDegree || /\bph\.?d\b/.test(roleLower) || /\bdoctoral\b/.test(roleLower)) {
@@ -162,7 +82,6 @@ function parseJobs(markdown) {
       eduLevel = "masters";
     }
 
-    // Filter: US only, skip UK/Canada/etc
     const skipLocations = ["UK", "Canada", "France", "Germany", "Japan", "China", "India", "Brazil", "Netherlands", "Ireland", "Singapore", "Australia"];
     if (skipLocations.some(loc => location.includes(loc))) continue;
 
@@ -170,253 +89,6 @@ function parseJobs(markdown) {
   }
 
   return jobs;
-}
-
-const EDU_LABELS = { undergrad: "Undergrad", masters: "Master's", phd: "PhD" };
-const EDU_COLORS = { undergrad: "#10B981", masters: "#3B82F6", phd: "#A855F7" };
-
-function RequirementBadge({ label, color, warn }) {
-  return (
-    <span style={{
-      fontSize: "10px",
-      fontFamily: "'JetBrains Mono', monospace",
-      background: color + "22",
-      color: color,
-      padding: "2px 7px",
-      borderRadius: "4px",
-      fontWeight: 600,
-      border: warn ? `1px solid ${color}44` : "none"
-    }}>{label}</span>
-  );
-}
-
-function JobCard({ job, bestProfile, score, matches, isApplied, onToggleApplied }) {
-  const profile = RESUME_PROFILES[bestProfile];
-
-  return (
-    <div style={{
-      background: "var(--card-bg)",
-      border: "1px solid var(--border)",
-      borderLeft: `4px solid ${isApplied ? "#10B981" : profile.color}`,
-      borderRadius: "8px",
-      padding: "16px 20px",
-      marginBottom: "10px",
-      transition: "all 0.2s ease",
-      opacity: isApplied ? 0.6 : 1
-    }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px", flexWrap: "wrap" }}>
-            <span style={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: "11px",
-              background: profile.color + "22",
-              color: profile.color,
-              padding: "2px 8px",
-              borderRadius: "4px",
-              fontWeight: 600
-            }}>{bestProfile}</span>
-            <span style={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: "11px",
-              background: "var(--score-bg)",
-              color: "var(--score-text)",
-              padding: "2px 8px",
-              borderRadius: "4px",
-              fontWeight: 700
-            }}>{score}pts</span>
-            <span style={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: "11px",
-              color: "var(--muted)",
-            }}>{job.age} ago</span>
-            <RequirementBadge label={EDU_LABELS[job.eduLevel]} color={EDU_COLORS[job.eduLevel]} />
-            {job.usCitizenOnly && <RequirementBadge label="US Citizen Only" color="#EF4444" warn />}
-            {job.noSponsorship && <RequirementBadge label="No Sponsorship" color="#F59E0B" warn />}
-            {job.advancedDegree && job.eduLevel === "undergrad" && <RequirementBadge label="Adv. Degree" color="#A855F7" warn />}
-          </div>
-          <div style={{
-            fontFamily: "'Space Grotesk', sans-serif",
-            fontSize: "16px",
-            fontWeight: 700,
-            color: "var(--text-primary)",
-            marginBottom: "2px"
-          }}>{job.role}</div>
-          <div style={{
-            fontSize: "14px",
-            color: "var(--text-secondary)",
-            marginBottom: "6px"
-          }}>
-            <span style={{ fontWeight: 600 }}>{job.company}</span>
-            <span style={{ margin: "0 6px", color: "var(--muted)" }}>·</span>
-            <span>{job.location}</span>
-          </div>
-          {matches.length > 0 && (
-            <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
-              {matches.slice(0, 6).map((m, i) => (
-                <span key={i} style={{
-                  fontSize: "10px",
-                  background: "var(--tag-bg)",
-                  color: "var(--tag-text)",
-                  padding: "1px 6px",
-                  borderRadius: "3px",
-                  fontFamily: "'JetBrains Mono', monospace"
-                }}>{m}</span>
-              ))}
-            </div>
-          )}
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "6px", flexShrink: 0 }}>
-          {job.link && (
-            <a href={job.link} target="_blank" rel="noopener noreferrer" style={{
-              background: "var(--accent)",
-              color: "#fff",
-              padding: "8px 16px",
-              borderRadius: "6px",
-              fontSize: "13px",
-              fontWeight: 700,
-              textDecoration: "none",
-              whiteSpace: "nowrap",
-              fontFamily: "'JetBrains Mono', monospace",
-              textAlign: "center"
-            }}>APPLY →</a>
-          )}
-          <button onClick={onToggleApplied} style={{
-            background: isApplied ? "#10B98133" : "var(--surface)",
-            color: isApplied ? "#10B981" : "var(--muted)",
-            border: `1px solid ${isApplied ? "#10B98144" : "var(--border)"}`,
-            borderRadius: "6px",
-            padding: "4px 12px",
-            fontSize: "11px",
-            fontWeight: 600,
-            cursor: "pointer",
-            fontFamily: "'JetBrains Mono', monospace",
-            whiteSpace: "nowrap"
-          }}>{isApplied ? "Applied ✓" : "Mark Applied"}</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ApplicationDashboard({ applied, jobs, getJobKey, toggleApplied }) {
-  const appliedEntries = Object.entries(applied)
-    .map(([key, timestamp]) => {
-      const job = jobs.find(j => getJobKey(j) === key);
-      return { key, timestamp, job };
-    })
-    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
-  const totalApplied = appliedEntries.length;
-  const thisWeek = appliedEntries.filter(e => {
-    const d = new Date(e.timestamp);
-    const now = new Date();
-    return (now - d) < 7 * 24 * 60 * 60 * 1000;
-  }).length;
-
-  const byProfile = {};
-  for (const entry of appliedEntries) {
-    if (entry.job) {
-      byProfile[entry.job.bestProfile] = (byProfile[entry.job.bestProfile] || 0) + 1;
-    }
-  }
-
-  const mono = "'JetBrains Mono', monospace";
-  const cardStyle = {
-    background: "#161628",
-    border: "1px solid #2a2a4a",
-    borderRadius: "8px",
-    padding: "16px 20px",
-  };
-
-  return (
-    <div>
-      {/* Summary Cards */}
-      <div style={{ display: "flex", gap: "16px", marginBottom: "24px", flexWrap: "wrap" }}>
-        <div style={{ ...cardStyle, flex: 1, minWidth: "140px" }}>
-          <div style={{ fontSize: "36px", fontWeight: 700, fontFamily: mono, color: "#8B5CF6" }}>{totalApplied}</div>
-          <div style={{ fontSize: "12px", color: "#a0a0b8", fontFamily: mono }}>total applied</div>
-        </div>
-        <div style={{ ...cardStyle, flex: 1, minWidth: "140px" }}>
-          <div style={{ fontSize: "36px", fontWeight: 700, fontFamily: mono, color: "#10B981" }}>{thisWeek}</div>
-          <div style={{ fontSize: "12px", color: "#a0a0b8", fontFamily: mono }}>this week</div>
-        </div>
-        <div style={{ ...cardStyle, flex: 1, minWidth: "140px" }}>
-          <div style={{ fontSize: "36px", fontWeight: 700, fontFamily: mono, color: "#F59E0B" }}>{Object.keys(byProfile).length}</div>
-          <div style={{ fontSize: "12px", color: "#a0a0b8", fontFamily: mono }}>categories</div>
-        </div>
-      </div>
-
-      {/* Breakdown by Profile */}
-      {Object.keys(byProfile).length > 0 && (
-        <div style={{ ...cardStyle, marginBottom: "24px" }}>
-          <div style={{ fontSize: "14px", fontWeight: 700, marginBottom: "12px", fontFamily: mono }}>By Category</div>
-          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-            {Object.entries(byProfile).map(([profile, count]) => (
-              <div key={profile} style={{
-                background: (RESUME_PROFILES[profile]?.color || "#888") + "22",
-                color: RESUME_PROFILES[profile]?.color || "#888",
-                padding: "6px 14px",
-                borderRadius: "6px",
-                fontSize: "12px",
-                fontWeight: 600,
-                fontFamily: mono
-              }}>{profile}: {count}</div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Application History */}
-      <div style={{ fontSize: "14px", fontWeight: 700, marginBottom: "12px", fontFamily: mono }}>Application History</div>
-      {appliedEntries.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "40px", color: "#606078", fontFamily: mono }}>
-          No applications yet. Mark jobs as applied from the Job Feed.
-        </div>
-      ) : (
-        appliedEntries.map(({ key, timestamp, job }) => (
-          <div key={key} style={{
-            ...cardStyle,
-            marginBottom: "8px",
-            borderLeft: `4px solid ${job ? (RESUME_PROFILES[job.bestProfile]?.color || "#888") : "#444"}`,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: "12px"
-          }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 700, fontSize: "15px", marginBottom: "2px" }}>
-                {job ? job.role : key.split("::")[1]}
-              </div>
-              <div style={{ fontSize: "13px", color: "#a0a0b8" }}>
-                <span style={{ fontWeight: 600 }}>{job ? job.company : key.split("::")[0]}</span>
-                {job && <><span style={{ margin: "0 6px", color: "#606078" }}>·</span><span>{job.location}</span></>}
-              </div>
-              <div style={{ fontSize: "11px", color: "#606078", fontFamily: mono, marginTop: "4px" }}>
-                Applied {new Date(timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                {job && <span style={{ marginLeft: "8px", color: RESUME_PROFILES[job.bestProfile]?.color }}>{job.bestProfile}</span>}
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: "6px", flexShrink: 0 }}>
-              {job?.link && (
-                <a href={job.link} target="_blank" rel="noopener noreferrer" style={{
-                  background: "#8B5CF6", color: "#fff", padding: "6px 12px",
-                  borderRadius: "6px", fontSize: "11px", fontWeight: 700,
-                  textDecoration: "none", fontFamily: mono
-                }}>VIEW</a>
-              )}
-              <button onClick={() => toggleApplied(key)} style={{
-                background: "#EF444422", color: "#EF4444",
-                border: "1px solid #EF444444", borderRadius: "6px",
-                padding: "6px 12px", fontSize: "11px", fontWeight: 600,
-                cursor: "pointer", fontFamily: mono
-              }}>Remove</button>
-            </div>
-          </div>
-        ))
-      )}
-    </div>
-  );
 }
 
 function JobMatcher() {
@@ -550,93 +222,18 @@ function JobMatcher() {
         </div>
 
         {view === "dashboard" ? (
-          <ApplicationDashboard applied={applied} jobs={jobs} getJobKey={getJobKey} toggleApplied={toggleApplied} />
+          <ApplicationTracker applied={applied} jobs={jobs} getJobKey={getJobKey} toggleApplied={toggleApplied} />
         ) : (<>
 
         {/* Controls */}
-        <div style={{
-          display: "flex",
-          gap: "10px",
-          marginBottom: "20px",
-          flexWrap: "wrap",
-          alignItems: "center"
-        }}>
-          <div style={{ display: "flex", gap: "4px", background: "var(--surface)", borderRadius: "8px", padding: "3px", flexShrink: 0 }}>
-            {["1", "2", "3", "7", "all"].map(v => (
-              <button key={v} onClick={() => setMaxAge(v)} style={{
-                background: maxAge === v ? "var(--accent)" : "transparent",
-                color: maxAge === v ? "#fff" : "var(--text-secondary)",
-                border: "none",
-                borderRadius: "6px",
-                padding: "6px 12px",
-                fontSize: "12px",
-                fontWeight: 600,
-                cursor: "pointer",
-                fontFamily: "'JetBrains Mono', monospace"
-              }}>{v === "all" ? "All" : v + "d"}</button>
-            ))}
-          </div>
-
-          <div style={{ display: "flex", gap: "4px", background: "var(--surface)", borderRadius: "8px", padding: "3px", flexWrap: "wrap", flexShrink: 0 }}>
-            <button onClick={() => setSelectedProfile("all")} style={{
-              background: selectedProfile === "all" ? "#444" : "transparent",
-              color: selectedProfile === "all" ? "#fff" : "var(--text-secondary)",
-              border: "none", borderRadius: "6px", padding: "6px 10px",
-              fontSize: "12px", fontWeight: 600, cursor: "pointer",
-              fontFamily: "'JetBrains Mono', monospace"
-            }}>All</button>
-            {Object.entries(RESUME_PROFILES).map(([name, p]) => (
-              <button key={name} onClick={() => setSelectedProfile(name)} style={{
-                background: selectedProfile === name ? p.color : "transparent",
-                color: selectedProfile === name ? "#fff" : "var(--text-secondary)",
-                border: "none", borderRadius: "6px", padding: "6px 10px",
-                fontSize: "11px", fontWeight: 600, cursor: "pointer",
-                fontFamily: "'JetBrains Mono', monospace"
-              }}>{name}</button>
-            ))}
-          </div>
-
-          <div style={{ display: "flex", gap: "4px", background: "var(--surface)", borderRadius: "8px", padding: "3px", flexShrink: 0 }}>
-            {[["all", "All Levels"], ["undergrad", "Undergrad"], ["masters", "Master's"], ["phd", "PhD"]].map(([val, label]) => (
-              <button key={val} onClick={() => setEduFilter(val)} style={{
-                background: eduFilter === val ? EDU_COLORS[val] || "#444" : "transparent",
-                color: eduFilter === val ? "#fff" : "var(--text-secondary)",
-                border: "none", borderRadius: "6px", padding: "6px 10px",
-                fontSize: "11px", fontWeight: 600, cursor: "pointer",
-                fontFamily: "'JetBrains Mono', monospace"
-              }}>{label}</button>
-            ))}
-          </div>
-
-          <button onClick={() => setHideNoSponsorship(!hideNoSponsorship)} style={{
-            background: hideNoSponsorship ? "#EF444433" : "var(--surface)",
-            color: hideNoSponsorship ? "#EF4444" : "var(--text-secondary)",
-            border: `1px solid ${hideNoSponsorship ? "#EF444444" : "var(--border)"}`,
-            borderRadius: "6px", padding: "6px 12px",
-            fontSize: "11px", fontWeight: 600, cursor: "pointer",
-            fontFamily: "'JetBrains Mono', monospace", flexShrink: 0
-          }}>{hideNoSponsorship ? "Showing: Sponsorship OK" : "Filter: Citizenship"}</button>
-
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <span style={{ fontSize: "12px", color: "var(--muted)", fontFamily: "'JetBrains Mono', monospace" }}>Min:</span>
-            <input type="range" min="0" max="50" value={minScore} onChange={e => setMinScore(parseInt(e.target.value))}
-              style={{ width: "80px", accentColor: "var(--accent)" }} />
-            <span style={{ fontSize: "12px", color: "var(--text-secondary)", fontFamily: "'JetBrains Mono', monospace", minWidth: "30px" }}>{minScore}pts</span>
-          </div>
-
-          <button onClick={fetchJobs} style={{
-            background: "var(--surface)",
-            color: "var(--text-secondary)",
-            border: "1px solid var(--border)",
-            borderRadius: "6px",
-            padding: "6px 14px",
-            fontSize: "12px",
-            fontWeight: 600,
-            cursor: "pointer",
-            fontFamily: "'JetBrains Mono', monospace",
-            marginLeft: "auto"
-          }}>↻ Refresh</button>
-        </div>
+        <FilterBar
+          maxAge={maxAge} setMaxAge={setMaxAge}
+          selectedProfile={selectedProfile} setSelectedProfile={setSelectedProfile}
+          eduFilter={eduFilter} setEduFilter={setEduFilter}
+          hideNoSponsorship={hideNoSponsorship} setHideNoSponsorship={setHideNoSponsorship}
+          minScore={minScore} setMinScore={setMinScore}
+          fetchJobs={fetchJobs}
+        />
 
         {/* Stats */}
         <div style={{
