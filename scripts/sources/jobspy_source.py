@@ -5,7 +5,8 @@ Skipped gracefully if jobspy is not installed.
 """
 
 import re
-from datetime import datetime, timezone
+import math
+from datetime import datetime, date, timezone
 from typing import List
 
 from .base import Job, is_foreign_location, is_us_only
@@ -26,10 +27,13 @@ SITES = ["linkedin", "indeed"]
 
 
 def _age_days(date_posted) -> float:
-    if date_posted is None:
+    if date_posted is None or (isinstance(date_posted, float) and math.isnan(date_posted)):
         return 9999.0
     try:
-        if hasattr(date_posted, "tzinfo") and date_posted.tzinfo is None:
+        # jobspy returns datetime.date (not datetime) — convert to datetime first
+        if isinstance(date_posted, date) and not isinstance(date_posted, datetime):
+            date_posted = datetime(date_posted.year, date_posted.month, date_posted.day, tzinfo=timezone.utc)
+        elif hasattr(date_posted, "tzinfo") and date_posted.tzinfo is None:
             date_posted = date_posted.replace(tzinfo=timezone.utc)
         now = datetime.now(timezone.utc)
         delta = now - date_posted
@@ -71,6 +75,10 @@ def fetch(max_age_days: int = 1) -> List[Job]:
                 date_posted = row.get("date_posted")
 
                 if not company or not role:
+                    continue
+                # LinkedIn returns full-time roles too — only keep intern/internship titles
+                role_lower = role.lower()
+                if "intern" not in role_lower and "internship" not in role_lower:
                     continue
                 if is_foreign_location(location):
                     continue
