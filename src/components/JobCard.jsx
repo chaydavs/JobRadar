@@ -1,130 +1,146 @@
 import { RESUME_PROFILES, EDU_LABELS, EDU_COLORS } from "../config/profiles.js";
 
-function RequirementBadge({ label, color, warn }) {
-  return (
-    <span style={{
-      fontSize: "10px",
-      fontFamily: "'JetBrains Mono', monospace",
-      background: color + "22",
-      color: color,
-      padding: "2px 7px",
-      borderRadius: "4px",
-      fontWeight: 600,
-      border: warn ? `1px solid ${color}44` : "none"
-    }}>{label}</span>
-  );
-}
+const mono = "'JetBrains Mono', monospace";
 
 export function JobCard({ job, isApplied, applicationStatus, onToggleApplied }) {
-  const profile = RESUME_PROFILES[job.bestProfile];
-  const statusColor = applicationStatus === "offer" ? "#10B981"
-    : applicationStatus === "interview" ? "#F59E0B"
-    : applicationStatus === "rejected" ? "#EF4444"
-    : isApplied ? "#10B981"
+  const profile = RESUME_PROFILES[job.bestProfile] ?? { color: "#606080" };
+
+  const accentColor = applicationStatus === "offer"     ? "#00D48A"
+    : applicationStatus === "interview" ? "#F5A500"
+    : applicationStatus === "rejected"  ? "#FF3A54"
+    : isApplied                         ? "#00D48A"
     : profile.color;
+
+  const scoreColor = job.score >= 40 ? "#00D48A"
+    : job.score >= 25 ? profile.color
+    : "#606080";
 
   return (
     <div style={{
-      background: "var(--card-bg)",
-      border: "1px solid var(--border)",
-      borderLeft: `4px solid ${statusColor}`,
-      borderRadius: "8px",
+      background: "#0C0C1A",
+      border: "1px solid #1A1A2E",
+      borderLeft: `3px solid ${accentColor}`,
+      borderRadius: "12px",
       padding: "16px 20px",
-      marginBottom: "10px",
-      transition: "all 0.2s ease",
-      opacity: isApplied ? 0.6 : 1
-    }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "12px" }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px", flexWrap: "wrap" }}>
+      opacity: isApplied ? 0.65 : 1,
+      transition: "border-color 0.15s, opacity 0.15s",
+    }}
+      onMouseEnter={e => e.currentTarget.style.borderColor = "#252540"}
+      onMouseLeave={e => e.currentTarget.style.borderColor = "#1A1A2E"}
+    >
+      <div style={{ display: "flex", gap: "16px", alignItems: "flex-start" }}>
+
+        {/* ── Left: job info ── */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+
+          {/* Meta row */}
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px", flexWrap: "wrap" }}>
             <span style={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: "11px",
-              background: profile.color + "22",
-              color: profile.color,
-              padding: "2px 8px",
-              borderRadius: "4px",
-              fontWeight: 600
-            }}>{job.bestProfile}</span>
+              fontFamily: mono, fontSize: "10px", fontWeight: 700,
+              background: profile.color + "20", color: profile.color,
+              padding: "2px 8px", borderRadius: "4px", letterSpacing: "0.04em",
+            }}>
+              {job.bestProfile}
+            </span>
+
             <span style={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: "11px",
-              background: "var(--score-bg)",
-              color: "var(--score-text)",
-              padding: "2px 8px",
-              borderRadius: "4px",
-              fontWeight: 700
-            }}>{job.score}pts</span>
+              fontFamily: mono, fontSize: "11px", fontWeight: 700,
+              color: scoreColor,
+            }}>
+              {job.score}pts
+            </span>
+
+            <span style={{ fontFamily: mono, fontSize: "11px", color: "#383858" }}>
+              {job.age}
+            </span>
+
             <span style={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: "11px",
-              color: "var(--muted)",
-            }}>{job.age} ago</span>
-            <RequirementBadge label={EDU_LABELS[job.eduLevel]} color={EDU_COLORS[job.eduLevel]} />
-            {job.usCitizenOnly && <RequirementBadge label="US Citizen Only" color="#EF4444" warn />}
-            {job.noSponsorship && <RequirementBadge label="No Sponsorship" color="#F59E0B" warn />}
-            {job.advancedDegree && job.eduLevel === "undergrad" && <RequirementBadge label="Adv. Degree" color="#A855F7" warn />}
+              fontFamily: mono, fontSize: "10px", fontWeight: 600,
+              background: (EDU_COLORS[job.eduLevel] ?? "#383858") + "20",
+              color: EDU_COLORS[job.eduLevel] ?? "#606080",
+              padding: "2px 7px", borderRadius: "4px",
+            }}>
+              {EDU_LABELS[job.eduLevel] ?? job.eduLevel}
+            </span>
+
+            {job.usCitizenOnly && <Flag label="US Citizen" />}
+            {job.noSponsorship && <Flag label="No Sponsor" color="#F5A500" />}
           </div>
+
+          {/* Role title */}
           <div style={{
-            fontFamily: "'Space Grotesk', sans-serif",
-            fontSize: "16px",
-            fontWeight: 700,
-            color: "var(--text-primary)",
-            marginBottom: "2px"
-          }}>{job.role}</div>
-          <div style={{
-            fontSize: "14px",
-            color: "var(--text-secondary)",
-            marginBottom: "6px"
+            fontSize: "16px", fontWeight: 700,
+            color: "#F0F0FA", marginBottom: "3px",
+            lineHeight: 1.3,
           }}>
-            <span style={{ fontWeight: 600 }}>{job.company}</span>
-            <span style={{ margin: "0 6px", color: "var(--muted)" }}>&middot;</span>
-            <span>{job.location}</span>
+            {job.role}
           </div>
+
+          {/* Company · Location */}
+          <div style={{ fontSize: "13px", color: "#9090B0", marginBottom: "8px" }}>
+            <span style={{ fontWeight: 600, color: "#C0C0DA" }}>{job.company}</span>
+            {job.location && <>
+              <span style={{ margin: "0 6px", color: "#2A2A44" }}>·</span>
+              <span>{job.location}</span>
+            </>}
+          </div>
+
+          {/* Keyword tags */}
           {job.matches.length > 0 && (
             <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
               {job.matches.slice(0, 6).map((m, i) => (
                 <span key={i} style={{
-                  fontSize: "10px",
-                  background: "var(--tag-bg)",
-                  color: "var(--tag-text)",
-                  padding: "1px 6px",
-                  borderRadius: "3px",
-                  fontFamily: "'JetBrains Mono', monospace"
+                  fontFamily: mono, fontSize: "10px",
+                  background: "#111120", color: "#484864",
+                  padding: "2px 7px", borderRadius: "4px",
+                  border: "1px solid #1A1A2E",
                 }}>{m}</span>
               ))}
             </div>
           )}
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "6px", flexShrink: 0 }}>
-          {job.link && (
+
+        {/* ── Right: actions ── */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px", flexShrink: 0, alignItems: "stretch", minWidth: "100px" }}>
+          {job.link ? (
             <a href={job.link} target="_blank" rel="noopener noreferrer" style={{
-              background: "var(--accent)",
-              color: "#fff",
-              padding: "8px 16px",
-              borderRadius: "6px",
-              fontSize: "13px",
-              fontWeight: 700,
-              textDecoration: "none",
-              whiteSpace: "nowrap",
-              fontFamily: "'JetBrains Mono', monospace",
-              textAlign: "center"
-            }}>APPLY &rarr;</a>
+              background: "#7B5CF0", color: "#fff",
+              padding: "8px 16px", borderRadius: "8px",
+              fontSize: "12px", fontWeight: 700,
+              fontFamily: mono, textAlign: "center",
+              display: "block", letterSpacing: "0.04em",
+            }}>
+              APPLY →
+            </a>
+          ) : (
+            <div style={{ height: "34px" }} />
           )}
+
           <button onClick={onToggleApplied} style={{
-            background: isApplied ? "#10B98133" : "var(--surface)",
-            color: isApplied ? "#10B981" : "var(--muted)",
-            border: `1px solid ${isApplied ? "#10B98144" : "var(--border)"}`,
-            borderRadius: "6px",
-            padding: "4px 12px",
-            fontSize: "11px",
-            fontWeight: 600,
-            cursor: "pointer",
-            fontFamily: "'JetBrains Mono', monospace",
-            whiteSpace: "nowrap"
-          }}>{isApplied ? "Applied \u2713" : "Mark Applied"}</button>
+            background: isApplied ? "rgba(0,212,138,0.12)" : "transparent",
+            color: isApplied ? "#00D48A" : "#383858",
+            border: `1px solid ${isApplied ? "rgba(0,212,138,0.3)" : "#1A1A2E"}`,
+            borderRadius: "8px", padding: "7px 12px",
+            fontSize: "11px", fontWeight: 600,
+            cursor: "pointer", fontFamily: mono,
+            textAlign: "center", whiteSpace: "nowrap",
+          }}>
+            {isApplied ? "Applied ✓" : "Mark Applied"}
+          </button>
         </div>
+
       </div>
     </div>
+  );
+}
+
+function Flag({ label, color = "#FF3A54" }) {
+  return (
+    <span style={{
+      fontFamily: mono, fontSize: "10px", fontWeight: 600,
+      background: color + "18", color: color,
+      border: `1px solid ${color}30`,
+      padding: "2px 7px", borderRadius: "4px",
+    }}>{label}</span>
   );
 }
