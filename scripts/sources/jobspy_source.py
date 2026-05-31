@@ -23,7 +23,8 @@ SEARCH_TERMS = [
     "full stack engineer intern",
 ]
 
-SITES = ["linkedin", "indeed"]
+# LinkedIn blocks GitHub Actions IPs (Azure). Use Indeed + ZipRecruiter in CI.
+SITES = ["indeed", "zip_recruiter"]
 
 
 def _age_days(date_posted) -> float:
