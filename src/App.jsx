@@ -70,7 +70,15 @@ function JobMatcher() {
 
   const getJobKey = (job) => `${job.company}::${job.role}`;
   const handleToggleApplied = (key) => setApplications(toggleApplication(applications, key));
-  const ageToNum = (age) => { const m = age.match(/(\d+)/); return m ? parseInt(m[1]) : 999; };
+  const ageToNum = (age) => {
+    const s = (age || "").toLowerCase().trim();
+    const m = s.match(/(\d+)/);
+    if (!m) return 999;
+    const n = parseInt(m[1]);
+    if (s.includes("mo") || s.includes("month")) return n * 30;
+    if (s.includes("w") || s.includes("week")) return n * 7;
+    return n; // days
+  };
 
   const filtered = jobs.filter(j => {
     if (maxAge !== "all" && ageToNum(j.age) > parseInt(maxAge)) return false;
