@@ -51,7 +51,9 @@ def fetch(max_age_days: int = 1) -> List[Job]:
 
     seen = set()
     all_jobs = []
-    hours_old = int(max_age_days * 25)  # slight buffer over 24h
+    # Always fetch 72h from the API — LinkedIn's index is sparse at <48h windows.
+    # Actual age filtering happens below using the real date_posted value.
+    FETCH_HOURS = 72
 
     for term in SEARCH_TERMS:
         try:
@@ -59,8 +61,8 @@ def fetch(max_age_days: int = 1) -> List[Job]:
                 site_name=SITES,
                 search_term=term,
                 location="United States",
-                results_wanted=20,
-                hours_old=hours_old,
+                results_wanted=25,
+                hours_old=FETCH_HOURS,
                 country_indeed="USA",
                 linkedin_fetch_description=False,
                 verbose=0,
