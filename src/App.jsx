@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { RESUME_PROFILES, EDU_COLORS } from "./config/profiles.js";
-import { parseJobs, scoreAllJobs } from "./lib/parser.js";
+import { normalizeAtsJobs, scoreAllJobs } from "./lib/parser.js";
 import { loadApplications, toggleApplication, pullFromSupabase } from "./lib/storage.js";
 import { getCachedJobs, setCachedJobs, formatCacheTime } from "./lib/cache.js";
 import { ErrorBoundary } from "./components/ErrorBoundary.jsx";
 import { JobCard } from "./components/JobCard.jsx";
 import { ApplicationDashboard } from "./components/ApplicationDashboard.jsx";
 
-const GITHUB_URL = "https://raw.githubusercontent.com/SimplifyJobs/Summer2026-Internships/dev/README.md";
+const JOBS_API = "/api/jobs";
 
 const PROFILE_SHORT = {
   "AI/ML Engineer":        "AI/ML",
@@ -52,10 +52,10 @@ function JobMatcher() {
     setError(null);
     if (!getCachedJobs()) setLoading(true);
     try {
-      const res = await fetch(GITHUB_URL);
-      if (!res.ok) throw new Error("Failed to fetch");
-      const md = await res.text();
-      const scored = scoreAllJobs(parseJobs(md));
+      const res = await fetch(JOBS_API);
+      if (!res.ok) throw new Error("Failed to fetch jobs");
+      const { jobs: raw } = await res.json();
+      const scored = scoreAllJobs(normalizeAtsJobs(raw));
       setJobs(scored);
       setCachedJobs(scored);
       setLastFetch(new Date().toLocaleString());
@@ -70,18 +70,9 @@ function JobMatcher() {
 
   const getJobKey = (job) => `${job.company}::${job.role}`;
   const handleToggleApplied = (key) => setApplications(toggleApplication(applications, key));
-  const ageToNum = (age) => {
-    const s = (age || "").toLowerCase().trim();
-    const m = s.match(/(\d+)/);
-    if (!m) return 999;
-    const n = parseInt(m[1]);
-    if (s.includes("mo") || s.includes("month")) return n * 30;
-    if (s.includes("w") || s.includes("week")) return n * 7;
-    return n; // days
-  };
 
   const filtered = jobs.filter(j => {
-    if (maxAge !== "all" && ageToNum(j.age) > parseInt(maxAge)) return false;
+    if (maxAge !== "all" && (j.ageDays ?? 9999) > parseInt(maxAge)) return false;
     if (selectedProfile !== "all" && j.bestProfile !== selectedProfile) return false;
     if (j.score < minScore) return false;
     if (eduFilter !== "all" && j.eduLevel !== eduFilter) return false;

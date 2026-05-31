@@ -24,8 +24,8 @@ SEARCH_TERMS = [
     "full stack engineer intern",
 ]
 
-# LinkedIn blocks GitHub Actions (Azure) IPs — use Indeed + ZipRecruiter
-SITES = ["indeed", "zip_recruiter"]
+# LinkedIn blocks GitHub Actions (Azure) IPs; ZipRecruiter returns 403. Indeed is reliable.
+SITES = ["indeed"]
 
 # Always fetch a wide window from the API; filter by calendar date below.
 # Indeed returns sparse results at <48h windows.

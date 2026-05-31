@@ -4,8 +4,9 @@ from typing import List
 
 
 _SOURCE_LABELS = {
-    "simplify": "SimplifyJobs",
-    "jobspy": "LinkedIn/Indeed",
+    "greenhouse": "Greenhouse",
+    "ashby": "Ashby",
+    "jobspy": "Indeed/ZipRecruiter",
     "muse": "The Muse",
 }
 
@@ -53,7 +54,7 @@ def build_html(scored_jobs: List[dict], total_new: int, date_str: str) -> str:
             {rows}
         </table>
         <p style="color:#606078;font-size:11px;margin-top:20px;text-align:center;">
-            Sources: SimplifyJobs · LinkedIn/Indeed (jobspy) · The Muse
+            Sources: Greenhouse · Ashby · Indeed/ZipRecruiter · The Muse · all dates verified
         </p>
     </div>
     """

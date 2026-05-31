@@ -3,10 +3,11 @@
 Job Radar — Daily email digest of new internship matches.
 Runs via GitHub Actions cron at 8am ET.
 
-Sources:
-  - SimplifyJobs GitHub README (SWE + DS/AI sections)
-  - jobspy  — scrapes LinkedIn + Indeed (requires: pip install jobspy)
-  - The Muse — free API, no key needed
+Sources (all return real posting timestamps):
+  - Greenhouse — public job board API (curated company list, no key)
+  - Ashby      — public job board API (curated company list, no key)
+  - jobspy     — scrapes Indeed + ZipRecruiter (requires: pip install python-jobspy)
+  - The Muse   — free API, no key needed
 """
 
 import os
@@ -20,7 +21,7 @@ from datetime import datetime
 # Ensure scripts/ is on the path for sibling imports
 sys.path.insert(0, os.path.dirname(__file__))
 
-from sources import simplify, muse
+from sources import greenhouse, ashby, muse
 from sources.jobspy_source import fetch as fetch_jobspy
 from scorer import score
 from digest import build_html
@@ -65,13 +66,16 @@ def main():
     print("Fetching sources...")
     all_jobs = []
 
-    print("[1/3] SimplifyJobs")
-    all_jobs += simplify.fetch(max_age_days)
+    print("[1/4] Greenhouse")
+    all_jobs += greenhouse.fetch(max_age_days)
 
-    print("[2/3] jobspy (LinkedIn + Indeed)")
+    print("[2/4] Ashby")
+    all_jobs += ashby.fetch(max_age_days)
+
+    print("[3/4] jobspy (Indeed + ZipRecruiter)")
     all_jobs += fetch_jobspy(max_age_days)
 
-    print("[3/3] The Muse")
+    print("[4/4] The Muse")
     all_jobs += muse.fetch(max_age_days)
 
     print(f"\nTotal new roles: {len(all_jobs)}")
