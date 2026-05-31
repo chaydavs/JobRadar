@@ -60,23 +60,27 @@ function detectEduLevel(role, advancedDegree) {
   return "undergrad";
 }
 
-export function parseJobs(markdown) {
-  const sectionHeader = "## \uD83E\uDD16 Data Science, AI & Machine Learning";
-  const dsStart = markdown.indexOf(sectionHeader);
-  if (dsStart === -1) return [];
+// Sections to parse (start emoji \u2192 stop-before emoji).
+// PM (\uD83D\uDCF1) and Quant (\uD83D\uDCC8) and Hardware (\uD83D\uDD27) are intentionally excluded.
+const SECTIONS = [
+  { start: "## \uD83D\uDCBB Software Engineering", stop: "## \uD83D\uDCF1 Product Management" },
+  { start: "## \uD83E\uDD16 Data Science, AI & Machine Learning", stop: "## \uD83D\uDCC8 Quantitative Finance" },
+];
 
-  const ends = ["## \uD83D\uDCC8", "## \uD83D\uDD27", "## \uD83D\uDEE0"]
-    .map(m => markdown.indexOf(m, dsStart + 1))
-    .filter(i => i > 0);
-  const dsEnd = ends.length > 0 ? Math.min(...ends) : markdown.length;
-  const dsContent = markdown.substring(dsStart, dsEnd);
+function extractSection(markdown, start, stop) {
+  const from = markdown.indexOf(start);
+  if (from === -1) return "";
+  const to = markdown.indexOf(stop, from + 1);
+  return markdown.substring(from, to > 0 ? to : markdown.length);
+}
 
+function parseSection(content) {
   const rowRegex = /<tr>([\s\S]*?)<\/tr>/g;
   const jobs = [];
   let lastCompany = "";
   let rowMatch;
 
-  while ((rowMatch = rowRegex.exec(dsContent)) !== null) {
+  while ((rowMatch = rowRegex.exec(content)) !== null) {
     const row = rowMatch[1];
     if (row.includes("\uD83D\uDD12")) continue;
 
@@ -113,4 +117,24 @@ export function parseJobs(markdown) {
   }
 
   return jobs;
+}
+
+export function parseJobs(markdown) {
+  const seen = new Set();
+  const allJobs = [];
+
+  for (const { start, stop } of SECTIONS) {
+    const content = extractSection(markdown, start, stop);
+    if (!content) continue;
+
+    for (const job of parseSection(content)) {
+      const key = `${job.company}::${job.role}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        allJobs.push(job);
+      }
+    }
+  }
+
+  return allJobs;
 }

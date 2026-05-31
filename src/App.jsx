@@ -13,7 +13,7 @@ function JobMatcher() {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [maxAge, setMaxAge] = useState("3");
+  const [maxAge, setMaxAge] = useState("1");
   const [selectedProfile, setSelectedProfile] = useState("all");
   const [minScore, setMinScore] = useState(15);
   const [eduFilter, setEduFilter] = useState("undergrad");
