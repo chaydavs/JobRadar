@@ -7,7 +7,6 @@ Sources:
   - SimplifyJobs GitHub README (SWE + DS/AI sections)
   - jobspy  — scrapes LinkedIn + Indeed (requires: pip install jobspy)
   - The Muse — free API, no key needed
-  - Adzuna   — free API, needs ADZUNA_APP_ID + ADZUNA_APP_KEY secrets
 """
 
 import os
@@ -21,7 +20,7 @@ from datetime import datetime
 # Ensure scripts/ is on the path for sibling imports
 sys.path.insert(0, os.path.dirname(__file__))
 
-from sources import simplify, muse, adzuna
+from sources import simplify, muse
 from sources.jobspy_source import fetch as fetch_jobspy
 from scorer import score
 from digest import build_html
@@ -66,17 +65,14 @@ def main():
     print("Fetching sources...")
     all_jobs = []
 
-    print("[1/4] SimplifyJobs")
+    print("[1/3] SimplifyJobs")
     all_jobs += simplify.fetch(max_age_days)
 
-    print("[2/4] jobspy (LinkedIn + Indeed)")
+    print("[2/3] jobspy (LinkedIn + Indeed)")
     all_jobs += fetch_jobspy(max_age_days)
 
-    print("[3/4] The Muse")
+    print("[3/3] The Muse")
     all_jobs += muse.fetch(max_age_days)
-
-    print("[4/4] Adzuna")
-    all_jobs += adzuna.fetch(max_age_days)
 
     print(f"\nTotal new roles: {len(all_jobs)}")
 

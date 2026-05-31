@@ -7,7 +7,6 @@ _SOURCE_LABELS = {
     "simplify": "SimplifyJobs",
     "jobspy": "LinkedIn/Indeed",
     "muse": "The Muse",
-    "adzuna": "Adzuna",
 }
 
 
@@ -54,7 +53,7 @@ def build_html(scored_jobs: List[dict], total_new: int, date_str: str) -> str:
             {rows}
         </table>
         <p style="color:#606078;font-size:11px;margin-top:20px;text-align:center;">
-            Sources: SimplifyJobs · LinkedIn/Indeed (jobspy) · The Muse · Adzuna
+            Sources: SimplifyJobs · LinkedIn/Indeed (jobspy) · The Muse
         </p>
     </div>
     """
