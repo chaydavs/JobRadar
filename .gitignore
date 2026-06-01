@@ -5,3 +5,8 @@ dist/
 .claude/
 __pycache__/
 .vercel
+
+.cursor/
+.gyst/
+.mcp.json
+gyst-wiki/

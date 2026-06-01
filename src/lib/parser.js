@@ -59,6 +59,7 @@ export function normalizeAtsJobs(rawJobs) {
     location: j.location,
     link: j.link,
     source: j.source,
+    recruiterSearch: j.recruiterSearch,
     postedAt: j.postedAt,
     age: formatAge(j.postedAt),
     ageDays: j.postedAt

@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { RESUME_PROFILES, EDU_LABELS, EDU_COLORS } from "../config/profiles.js";
+import { linkedinRecruiterSearch, draftMessage } from "../lib/outreach.js";
 
 const mono = "'JetBrains Mono', monospace";
 
 export function JobCard({ job, isApplied, applicationStatus, onToggleApplied }) {
   const profile = RESUME_PROFILES[job.bestProfile] ?? { color: "#606080" };
+  const [showReach, setShowReach] = useState(false);
 
   const accentColor = applicationStatus === "offer"     ? "#00D48A"
     : applicationStatus === "interview" ? "#F5A500"
@@ -127,8 +130,75 @@ export function JobCard({ job, isApplied, applicationStatus, onToggleApplied }) 
           }}>
             {isApplied ? "Applied ✓" : "Mark Applied"}
           </button>
+
+          <button onClick={() => setShowReach(!showReach)} style={{
+            background: showReach ? "rgba(59,130,246,0.12)" : "transparent",
+            color: showReach ? "#3B82F6" : "#383858",
+            border: `1px solid ${showReach ? "rgba(59,130,246,0.3)" : "#1A1A2E"}`,
+            borderRadius: "8px", padding: "7px 12px",
+            fontSize: "11px", fontWeight: 600,
+            cursor: "pointer", fontFamily: mono,
+            textAlign: "center", whiteSpace: "nowrap",
+          }}>
+            ✉ Reach out
+          </button>
         </div>
 
+      </div>
+
+      {showReach && <RecruiterPanel job={job} />}
+    </div>
+  );
+}
+
+function RecruiterPanel({ job }) {
+  const [copied, setCopied] = useState(false);
+  const link = job.recruiterSearch || linkedinRecruiterSearch(job.company);
+  const msg = draftMessage(job.role, job.company, job.matches);
+
+  const copy = () => {
+    navigator.clipboard.writeText(msg).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    });
+  };
+
+  return (
+    <div style={{
+      marginTop: "14px", paddingTop: "14px",
+      borderTop: "1px solid #1A1A2E",
+      display: "flex", flexDirection: "column", gap: "10px",
+    }}>
+      <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+        <a href={link} target="_blank" rel="noopener noreferrer" style={{
+          background: "#3B82F6", color: "#fff",
+          padding: "6px 14px", borderRadius: "7px",
+          fontSize: "11px", fontWeight: 700, fontFamily: mono,
+          textDecoration: "none",
+        }}>
+          🔗 Find recruiter on LinkedIn
+        </a>
+        <span style={{ fontFamily: mono, fontSize: "10px", color: "#383858" }}>
+          ATS doesn't expose contacts — search + DM
+        </span>
+      </div>
+
+      <div style={{ position: "relative" }}>
+        <textarea readOnly value={msg} rows={4} style={{
+          width: "100%", background: "#07070F",
+          border: "1px solid #1A1A2E", borderRadius: "8px",
+          color: "#C0C0DA", fontSize: "12px", lineHeight: 1.5,
+          padding: "10px 12px", fontFamily: mono, resize: "vertical",
+        }} />
+        <button onClick={copy} style={{
+          position: "absolute", top: "8px", right: "8px",
+          background: copied ? "rgba(0,212,138,0.15)" : "#1A1A2E",
+          color: copied ? "#00D48A" : "#9090B0",
+          border: "none", borderRadius: "6px", padding: "4px 10px",
+          fontSize: "10px", fontWeight: 600, cursor: "pointer", fontFamily: mono,
+        }}>
+          {copied ? "Copied ✓" : "Copy"}
+        </button>
       </div>
     </div>
   );

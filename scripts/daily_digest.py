@@ -26,6 +26,7 @@ from sources.jobspy_source import fetch as fetch_jobspy
 from scorer import score
 from digest import build_html
 from profiles import RESUME_PROFILES
+from outreach import linkedin_recruiter_search, draft_message
 
 
 def send_email(html_content: str, recipient: str, subject: str) -> bool:
@@ -104,6 +105,8 @@ def main():
             "score": job_score,
             "matches": matches,
             "flag": job.us_citizen_only,
+            "recruiter_link": linkedin_recruiter_search(job.company),
+            "draft": draft_message(job.role, job.company, matches),
         })
 
     scored.sort(key=lambda x: x["score"], reverse=True)
@@ -119,7 +122,8 @@ def main():
             seen_keys.add(key)
             deduped.append(j)
 
-    top = deduped[:25]
+    # Curated: just the 10 best matches per day
+    top = deduped[:10]
 
     print(f"Matches above {min_score}pts (after dedup): {len(deduped)}")
     print(f"Sending top {len(top)}\n")
@@ -129,8 +133,8 @@ def main():
 
     if top:
         date_str = datetime.now().strftime("%b %d, %Y")
-        subject = f"🎯 Job Radar — {len(deduped)} matches ({date_str})"
-        html = build_html(top, len(all_jobs), date_str)
+        subject = f"🎯 Job Radar — {len(top)} curated picks ({date_str})"
+        html = build_html(top, len(deduped), date_str)
         send_email(html, recipient, subject)
     else:
         print("\nNo matches above threshold. No email sent.")

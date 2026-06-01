@@ -29,6 +29,7 @@ function JobMatcher() {
   const [minScore, setMinScore] = useState(15);
   const [eduFilter, setEduFilter] = useState("undergrad");
   const [hideNoSponsorship, setHideNoSponsorship] = useState(true);
+  const [top10Only, setTop10Only] = useState(true);
   const [applications, setApplications] = useState(loadApplications);
   const [view, setView] = useState("jobs");
   const [lastFetch, setLastFetch] = useState(null);
@@ -71,7 +72,7 @@ function JobMatcher() {
   const getJobKey = (job) => `${job.company}::${job.role}`;
   const handleToggleApplied = (key) => setApplications(toggleApplication(applications, key));
 
-  const filtered = jobs.filter(j => {
+  const matched = jobs.filter(j => {
     if (maxAge !== "all" && (j.ageDays ?? 9999) > parseInt(maxAge)) return false;
     if (selectedProfile !== "all" && j.bestProfile !== selectedProfile) return false;
     if (j.score < minScore) return false;
@@ -79,6 +80,9 @@ function JobMatcher() {
     if (hideNoSponsorship && (j.noSponsorship || j.usCitizenOnly)) return false;
     return true;
   });
+
+  // Curated mode: show only the 10 highest-scored matches
+  const filtered = top10Only ? matched.slice(0, 10) : matched;
 
   const appliedCount = Object.keys(applications).length;
 
@@ -144,6 +148,16 @@ function JobMatcher() {
                 ))}
               </div>
               <div style={{ flex: 1 }} />
+              <button onClick={() => setTop10Only(!top10Only)} style={{
+                background: top10Only ? "#7B5CF0" : "transparent",
+                color: top10Only ? "#fff" : "#606080",
+                border: `1px solid ${top10Only ? "#7B5CF0" : "#1A1A2E"}`,
+                borderRadius: "7px", padding: "5px 14px",
+                fontSize: "12px", fontWeight: 700, cursor: "pointer",
+                fontFamily: mono, whiteSpace: "nowrap",
+              }}>
+                ⭐ Top 10{top10Only ? "" : " off"}
+              </button>
               <button onClick={() => fetchJobs(true)} style={{
                 background: "transparent", color: "#383858",
                 border: "1px solid #1A1A2E", borderRadius: "7px",
@@ -204,10 +218,10 @@ function JobMatcher() {
           {/* ── Stats ── */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1px", background: "#1A1A2E", borderRadius: "12px", overflow: "hidden", marginBottom: "20px" }}>
             {[
-              { value: filtered.length, label: "Matches", color: "#F0F0FA" },
-              { value: filtered.filter(j => j.score >= 30).length, label: "Strong (30+)", color: "#00D48A" },
-              { value: filtered.filter(j => j.location.toLowerCase().includes("remote")).length, label: "Remote", color: "#F5A500" },
-              { value: filtered.filter(j => applications[getJobKey(j)]).length, label: "Applied", color: "#7B5CF0" },
+              { value: top10Only ? `${filtered.length}/${matched.length}` : matched.length, label: top10Only ? "Showing top" : "Matches", color: "#F0F0FA" },
+              { value: matched.filter(j => j.score >= 30).length, label: "Strong (30+)", color: "#00D48A" },
+              { value: matched.filter(j => j.location.toLowerCase().includes("remote")).length, label: "Remote", color: "#F5A500" },
+              { value: matched.filter(j => applications[getJobKey(j)]).length, label: "Applied", color: "#7B5CF0" },
             ].map(({ value, label, color }) => (
               <div key={label} style={{ background: "#0C0C1A", padding: "14px 18px" }}>
                 <div style={{ fontSize: "28px", fontWeight: 700, fontFamily: mono, color, lineHeight: 1 }}>{value}</div>
