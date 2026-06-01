@@ -23,6 +23,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from sources import greenhouse, ashby, muse
 from sources.jobspy_source import fetch as fetch_jobspy
+from sources.base import is_blocked_company, requires_blocked_auth
 from scorer import score
 from digest import build_html
 from profiles import RESUME_PROFILES
@@ -90,8 +91,10 @@ def main():
     # --- Score + filter ---
     scored = []
     for job in all_jobs:
-        # Skip jobs with sponsorship/citizenship blocks
+        # Skip sponsorship/citizenship blocks and defense/govt contractors
         if job.no_sponsorship or job.us_citizen_only:
+            continue
+        if is_blocked_company(job.company) or requires_blocked_auth(job.role):
             continue
 
         profile_name, job_score, matches = score(job)

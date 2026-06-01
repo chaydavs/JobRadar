@@ -45,7 +45,6 @@ GREENHOUSE = [
     ("temporal", "Temporal"),
     ("cockroachlabs", "CockroachDB"),
     ("starburst", "Starburst"),
-    ("vannevarlabs", "Vannevar Labs"),
     ("miro", "Miro"),
     ("gusto", "Gusto"),
     ("pagerduty", "PagerDuty"),

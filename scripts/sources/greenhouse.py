@@ -9,8 +9,13 @@ from typing import List
 from urllib.request import urlopen, Request
 from urllib.error import URLError
 
-from .base import Job, is_foreign_location, is_us_only, is_early_career, is_technical
+import re as _re
+from .base import Job, is_foreign_location, is_early_career, is_technical, requires_blocked_auth
 from .companies import GREENHOUSE
+
+
+def _strip_html(html: str) -> str:
+    return _re.sub(r"<[^>]+>", " ", html or "")
 
 
 def _age_days(updated_at: str) -> float:
@@ -22,10 +27,11 @@ def _age_days(updated_at: str) -> float:
 
 
 def _fetch_board(slug: str, name: str, max_age_days: int) -> List[Job]:
-    url = f"https://boards-api.greenhouse.io/v1/boards/{slug}/jobs"
+    # content=true includes the full JD so we can filter on work-auth requirements
+    url = f"https://boards-api.greenhouse.io/v1/boards/{slug}/jobs?content=true"
     req = Request(url, headers={"User-Agent": "job-radar/2.0"})
     try:
-        with urlopen(req, timeout=10) as resp:
+        with urlopen(req, timeout=12) as resp:
             data = json.loads(resp.read().decode("utf-8"))
     except (URLError, json.JSONDecodeError, TimeoutError):
         return []
@@ -39,6 +45,10 @@ def _fetch_board(slug: str, name: str, max_age_days: int) -> List[Job]:
         age = _age_days(j.get("updated_at", ""))
         if age > max_age_days:
             continue
+        # Skip roles requiring citizenship / clearance / green card / no sponsorship
+        description = _strip_html(j.get("content", ""))
+        if requires_blocked_auth(title, description):
+            continue
         jobs.append(Job(
             company=name,
             role=title,
@@ -46,7 +56,6 @@ def _fetch_board(slug: str, name: str, max_age_days: int) -> List[Job]:
             link=j.get("absolute_url", ""),
             age_days=age,
             source="greenhouse",
-            us_citizen_only=is_us_only(title, name),
         ))
     return jobs
 

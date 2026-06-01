@@ -10,7 +10,7 @@ import math
 from datetime import datetime, date, timedelta, timezone
 from typing import List
 
-from .base import Job, is_foreign_location, is_us_only
+from .base import Job, is_foreign_location, requires_blocked_auth
 
 
 # Search terms tuned to Chay's target profiles
@@ -96,6 +96,7 @@ def fetch(max_age_days: int = 1) -> List[Job]:
                 role = str(row.get("title") or "").strip()
                 location = str(row.get("location") or "").strip()
                 link = str(row.get("job_url") or row.get("job_url_direct") or "").strip()
+                description = str(row.get("description") or "")
                 date_posted = row.get("date_posted")
 
                 if not company or not role:
@@ -107,6 +108,9 @@ def fetch(max_age_days: int = 1) -> List[Job]:
                 if is_foreign_location(location):
                     continue
                 if not _is_recent(date_posted, max_age_days):
+                    continue
+                # Skip citizenship / clearance / green-card / no-sponsorship roles
+                if requires_blocked_auth(role, description):
                     continue
 
                 c_key = re.sub(r'\W+', '', company.lower())
@@ -123,7 +127,6 @@ def fetch(max_age_days: int = 1) -> List[Job]:
                     link=link,
                     age_days=_age_from_date(date_posted),
                     source="jobspy",
-                    us_citizen_only=is_us_only(role, company),
                 ))
                 count += 1
 

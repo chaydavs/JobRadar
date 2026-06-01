@@ -9,7 +9,7 @@ from typing import List
 from urllib.request import urlopen, Request
 from urllib.error import URLError
 
-from .base import Job, is_foreign_location, is_us_only, is_early_career, is_technical
+from .base import Job, is_foreign_location, is_early_career, is_technical, requires_blocked_auth
 from .companies import ASHBY
 
 
@@ -39,6 +39,8 @@ def _fetch_board(slug: str, name: str, max_age_days: int) -> List[Job]:
         age = _age_days(j.get("publishedAt", ""))
         if age > max_age_days:
             continue
+        if requires_blocked_auth(title, j.get("descriptionPlain", "")):
+            continue
         jobs.append(Job(
             company=name,
             role=title,
@@ -46,7 +48,6 @@ def _fetch_board(slug: str, name: str, max_age_days: int) -> List[Job]:
             link=j.get("jobUrl") or j.get("applyUrl", ""),
             age_days=age,
             source="ashby",
-            us_citizen_only=is_us_only(title, name),
         ))
     return jobs
 

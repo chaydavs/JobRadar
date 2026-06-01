@@ -85,3 +85,49 @@ def is_technical(title: str) -> bool:
 
 def is_intern(title: str) -> bool:
     return bool(re.search(r"\bintern(ship)?\b", title, re.IGNORECASE))
+
+
+# --- Work-authorization filter ---
+# Chay needs visa sponsorship, so block anything requiring US citizenship,
+# a green card, security clearance, or that says no sponsorship. Government /
+# defense roles almost always require these.
+_BLOCKED_AUTH_RE = re.compile(
+    r"(u\.?s\.?\s*citizen|citizenship\s+(is\s+)?required|must\s+be\s+a\s+citizen|"
+    r"u\.?s\.?\s*person|green\s*card|permanent\s+resident|lawful\s+permanent|"
+    r"security\s+clearance|active\s+(secret|top\s+secret|clearance)|"
+    r"ts/sci|top\s+secret|secret\s+clearance|polygraph|"
+    r"\bdod\b|department\s+of\s+defense|active\s+duty|skillbridge|"
+    r"\bitar\b|export\s+control|federal\s+government|public\s+trust\s+clearance|"
+    r"no\s+sponsorship|not\s+(able|provide|offer).{0,20}sponsor|"
+    r"unable\s+to.{0,20}sponsor|cannot\s+sponsor|without\s+(visa\s+)?sponsorship|"
+    r"do(es)?\s+not\s+(provide|offer)\s+(visa\s+)?sponsorship|"
+    r"not\s+require\s+sponsorship|without\s+the\s+need\s+for\s+sponsorship)",
+    re.IGNORECASE,
+)
+
+
+def requires_blocked_auth(title: str, description: str = "") -> bool:
+    """True if the role requires citizenship / clearance / green card, or says no sponsorship."""
+    return bool(_BLOCKED_AUTH_RE.search(f"{title} {description}"))
+
+
+# Defense / government contractors — roles almost always require clearance or
+# citizenship, so block by company name (jobspy descriptions are often empty,
+# so text scanning alone misses these).
+_DEFENSE_COMPANIES = [
+    "bigbear", "big bear", "teledyne", "flir", "saic", "leidos", "booz allen",
+    "raytheon", "rtx", "lockheed", "northrop", "general dynamics", "l3harris",
+    "l3 harris", "caci", "peraton", "mantech", "scientific research corporation",
+    "anduril", "palantir", "parsons", "sierra nevada", "bae systems", "draper",
+    "mitre", "aerospace corporation", "ball aerospace", "maxar", "boeing",
+    "northrop grumman", "huntington ingalls", "kbr", "jacobs", "battelle",
+    "in-q-tel", "two six", "shield ai", "epirus", "vannevar", "rebellion defense",
+    "govini", "second front", "darpa",
+    "national security agency", "department of defense", "u.s. navy", "u.s. army",
+    "air force", "space force", "homeland security",
+]
+
+
+def is_blocked_company(company: str) -> bool:
+    c = company.lower()
+    return any(d in c for d in _DEFENSE_COMPANIES)

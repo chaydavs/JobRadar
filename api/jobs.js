@@ -46,7 +46,6 @@ const GREENHOUSE = [
   { slug: "temporal",     name: "Temporal" },
   { slug: "cockroachlabs", name: "CockroachDB" },
   { slug: "starburst",    name: "Starburst" },
-  { slug: "vannevarlabs", name: "Vannevar Labs" },
   { slug: "miro",         name: "Miro" },
   { slug: "gusto",        name: "Gusto" },
   { slug: "pagerduty",    name: "PagerDuty" },
@@ -135,16 +134,46 @@ function isForeignLocation(loc) {
   return SKIP_LOCATIONS.some(l => loc.includes(l));
 }
 
+// Work-authorization filter — Chay needs sponsorship, so block citizenship /
+// clearance / green-card / no-sponsorship roles (govt & defense almost always require these)
+const BLOCKED_AUTH_RE = /(u\.?s\.?\s*citizen|citizenship\s+(is\s+)?required|must\s+be\s+a\s+citizen|u\.?s\.?\s*person|green\s*card|permanent\s+resident|lawful\s+permanent|security\s+clearance|active\s+(secret|top\s+secret|clearance)|ts\/sci|top\s+secret|secret\s+clearance|polygraph|\bdod\b|department\s+of\s+defense|active\s+duty|skillbridge|\bitar\b|export\s+control|federal\s+government|public\s+trust\s+clearance|no\s+sponsorship|not\s+(able|provide|offer)[\s\S]{0,20}sponsor|unable\s+to[\s\S]{0,20}sponsor|cannot\s+sponsor|without\s+(visa\s+)?sponsorship|do(es)?\s+not\s+(provide|offer)\s+(visa\s+)?sponsorship|not\s+require\s+sponsorship|without\s+the\s+need\s+for\s+sponsorship)/i;
+
+function stripHtml(html) {
+  return (html || "").replace(/<[^>]+>/g, " ");
+}
+
+function requiresBlockedAuth(title, description = "") {
+  return BLOCKED_AUTH_RE.test(`${title} ${description}`);
+}
+
+// Defense / government contractors — roles almost always require clearance/citizenship
+const DEFENSE_COMPANIES = [
+  "bigbear", "big bear", "teledyne", "flir", "saic", "leidos", "booz allen",
+  "raytheon", "rtx", "lockheed", "northrop", "general dynamics", "l3harris",
+  "l3 harris", "caci", "peraton", "mantech", "scientific research corporation",
+  "anduril", "palantir", "parsons", "sierra nevada", "bae systems", "draper",
+  "mitre", "aerospace corporation", "ball aerospace", "maxar", "boeing",
+  "huntington ingalls", "kbr", "jacobs", "battelle", "in-q-tel", "two six",
+  "shield ai", "epirus", "vannevar", "rebellion defense", "govini",
+  "second front", "darpa", "air force", "space force", "homeland security",
+];
+
+function isBlockedCompany(company) {
+  const c = company.toLowerCase();
+  return DEFENSE_COMPANIES.some(d => c.includes(d));
+}
+
 async function fetchGreenhouse({ slug, name }) {
   try {
     const res = await fetch(
-      `https://boards-api.greenhouse.io/v1/boards/${slug}/jobs`,
-      { headers: { "User-Agent": "job-radar/2.0" }, signal: AbortSignal.timeout(8000) }
+      `https://boards-api.greenhouse.io/v1/boards/${slug}/jobs?content=true`,
+      { headers: { "User-Agent": "job-radar/2.0" }, signal: AbortSignal.timeout(10000) }
     );
     if (!res.ok) return [];
     const { jobs = [] } = await res.json();
     return jobs
-      .filter(j => isRelevant(j.title) && !isForeignLocation(j.location?.name || ""))
+      .filter(j => isRelevant(j.title) && !isForeignLocation(j.location?.name || "")
+        && !requiresBlockedAuth(j.title, stripHtml(j.content)))
       .map(j => ({
         company: name,
         role: j.title,
@@ -169,7 +198,8 @@ async function fetchAshby({ slug, name }) {
     const data = await res.json();
     const jobs = data.jobs || [];
     return jobs
-      .filter(j => isRelevant(j.title) && !isForeignLocation(j.location || ""))
+      .filter(j => isRelevant(j.title) && !isForeignLocation(j.location || "")
+        && !requiresBlockedAuth(j.title, j.descriptionPlain || ""))
       .map(j => ({
         company: name,
         role: j.title.trim(),
@@ -193,7 +223,8 @@ async function fetchLever({ slug, name }) {
     if (!res.ok) return [];
     const jobs = await res.json();
     return (Array.isArray(jobs) ? jobs : [])
-      .filter(j => isRelevant(j.text) && !isForeignLocation(j.categories?.location || ""))
+      .filter(j => isRelevant(j.text) && !isForeignLocation(j.categories?.location || "")
+        && !requiresBlockedAuth(j.text, stripHtml(j.descriptionPlain || j.description || "")))
       .map(j => ({
         company: name,
         role: j.text,
@@ -222,9 +253,10 @@ export default async function handler(req, res) {
     ...leverResults.flat(),
   ];
 
-  // Dedup by normalized company::role, attach recruiter search link
+  // Drop defense/govt companies, dedup by company::role, attach recruiter link
   const seen = new Set();
   const jobs = all.filter(j => {
+    if (isBlockedCompany(j.company)) return false;
     const key = `${j.company.toLowerCase().replace(/\W/g, "")}::${j.role.toLowerCase().replace(/\W/g, "").slice(0, 50)}`;
     if (seen.has(key)) return false;
     seen.add(key);
