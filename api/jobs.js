@@ -253,10 +253,16 @@ export default async function handler(req, res) {
     ...leverResults.flat(),
   ];
 
-  // Drop defense/govt companies, dedup by company::role, attach recruiter link
+  // Hard age cap — never surface stale (month-old) postings to the dashboard
+  const MAX_AGE_DAYS = 21;
+  const now = Date.now();
+
+  // Drop stale + defense/govt companies, dedup by company::role, attach recruiter link
   const seen = new Set();
   const jobs = all.filter(j => {
     if (isBlockedCompany(j.company)) return false;
+    const ageDays = j.postedAt ? (now - new Date(j.postedAt).getTime()) / 86400000 : 9999;
+    if (ageDays > MAX_AGE_DAYS) return false;
     const key = `${j.company.toLowerCase().replace(/\W/g, "")}::${j.role.toLowerCase().replace(/\W/g, "").slice(0, 50)}`;
     if (seen.has(key)) return false;
     seen.add(key);

@@ -6,7 +6,7 @@
  * - Falls back to network-only if no cache exists
  */
 
-const CACHE_KEY = "jobRadarCache";
+const CACHE_KEY = "jobRadarCache_v2"; // v2: ATS sources w/ ageDays (invalidates stale SimplifyJobs cache)
 const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
 export function getCachedJobs() {

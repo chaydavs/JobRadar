@@ -5,8 +5,8 @@ import { exportApplicationsCSV } from "../lib/export.js";
 
 const mono = "'JetBrains Mono', monospace";
 const cardStyle = {
-  background: "#161628",
-  border: "1px solid #2a2a4a",
+  background: "#FFFFFF",
+  border: "1px solid #E6E6EF",
   borderRadius: "8px",
   padding: "16px 20px",
 };
@@ -17,9 +17,9 @@ function StatusSelect({ value, onChange }) {
       value={value}
       onChange={e => onChange(e.target.value)}
       style={{
-        background: "#0f0f1a",
-        color: "#e8e8f0",
-        border: "1px solid #2a2a4a",
+        background: "#F4F4F9",
+        color: "#14142B",
+        border: "1px solid #E6E6EF",
         borderRadius: "4px",
         padding: "4px 8px",
         fontSize: "11px",
@@ -44,7 +44,7 @@ function NotesEditor({ notes, onSave }) {
         onClick={() => { setDraft(notes); setEditing(true); }}
         style={{
           background: "transparent",
-          color: notes ? "#a0a0b8" : "#606078",
+          color: notes ? "#55556E" : "#8585A0",
           border: "none",
           fontSize: "11px",
           fontFamily: mono,
@@ -71,9 +71,9 @@ function NotesEditor({ notes, onSave }) {
         autoFocus
         placeholder="Interview date, contact, notes..."
         style={{
-          background: "#0f0f1a",
-          color: "#e8e8f0",
-          border: "1px solid #2a2a4a",
+          background: "#F4F4F9",
+          color: "#14142B",
+          border: "1px solid #E6E6EF",
           borderRadius: "4px",
           padding: "4px 8px",
           fontSize: "11px",
@@ -121,7 +121,7 @@ export function ApplicationDashboard({ applications, jobs, getJobKey, onApplicat
   for (const entry of appliedEntries) {
     const s = APPLICATION_STATUSES.find(st => st.value === entry.status);
     const label = s?.label ?? entry.status;
-    byStatus[label] = (byStatus[label] || { count: 0, color: s?.color ?? "#888" });
+    byStatus[label] = (byStatus[label] || { count: 0, color: s?.color ?? "#9090A4" });
     byStatus[label].count += 1;
   }
 
@@ -148,7 +148,7 @@ export function ApplicationDashboard({ applications, jobs, getJobKey, onApplicat
         ].map(({ value, label, color }) => (
           <div key={label} style={{ ...cardStyle, flex: 1, minWidth: "140px" }}>
             <div style={{ fontSize: "36px", fontWeight: 700, fontFamily: mono, color }}>{value}</div>
-            <div style={{ fontSize: "12px", color: "#a0a0b8", fontFamily: mono }}>{label}</div>
+            <div style={{ fontSize: "12px", color: "#55556E", fontFamily: mono }}>{label}</div>
           </div>
         ))}
       </div>
@@ -180,9 +180,9 @@ export function ApplicationDashboard({ applications, jobs, getJobKey, onApplicat
           <button
             onClick={() => exportApplicationsCSV(applications, jobs, getJobKey)}
             style={{
-              background: "#161628",
-              color: "#a0a0b8",
-              border: "1px solid #2a2a4a",
+              background: "#FFFFFF",
+              color: "#55556E",
+              border: "1px solid #E6E6EF",
               borderRadius: "6px",
               padding: "6px 14px",
               fontSize: "11px",
@@ -196,13 +196,13 @@ export function ApplicationDashboard({ applications, jobs, getJobKey, onApplicat
 
       {/* Application List */}
       {appliedEntries.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "40px", color: "#606078", fontFamily: mono }}>
+        <div style={{ textAlign: "center", padding: "40px", color: "#8585A0", fontFamily: mono }}>
           No applications yet. Mark jobs as applied from the Job Feed.
         </div>
       ) : (
         appliedEntries.map(({ key, status, notes, appliedAt, job }) => {
           const statusDef = APPLICATION_STATUSES.find(s => s.value === status) ?? APPLICATION_STATUSES[0];
-          const profileColor = job ? (RESUME_PROFILES[job.bestProfile]?.color ?? "#888") : "#444";
+          const profileColor = job ? (RESUME_PROFILES[job.bestProfile]?.color ?? "#9090A4") : "#6B6B85";
 
           return (
             <div key={key} style={{
@@ -218,11 +218,11 @@ export function ApplicationDashboard({ applications, jobs, getJobKey, onApplicat
                 <div style={{ fontWeight: 700, fontSize: "15px", marginBottom: "2px" }}>
                   {job ? job.role : key.split("::")[1]}
                 </div>
-                <div style={{ fontSize: "13px", color: "#a0a0b8" }}>
+                <div style={{ fontSize: "13px", color: "#55556E" }}>
                   <span style={{ fontWeight: 600 }}>{job ? job.company : key.split("::")[0]}</span>
-                  {job && <><span style={{ margin: "0 6px", color: "#606078" }}>&middot;</span><span>{job.location}</span></>}
+                  {job && <><span style={{ margin: "0 6px", color: "#8585A0" }}>&middot;</span><span>{job.location}</span></>}
                 </div>
-                <div style={{ fontSize: "11px", color: "#606078", fontFamily: mono, marginTop: "4px", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                <div style={{ fontSize: "11px", color: "#8585A0", fontFamily: mono, marginTop: "4px", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                   <span>Applied {new Date(appliedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
                   {job && <span style={{ color: profileColor }}>{job.bestProfile}</span>}
                   {job?.score && <span style={{ color: "#8B5CF6" }}>{job.score}pts</span>}
