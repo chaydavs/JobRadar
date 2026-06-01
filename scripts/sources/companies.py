@@ -50,6 +50,8 @@ GREENHOUSE = [
     ("gusto", "Gusto"),
     ("pagerduty", "PagerDuty"),
     ("zendesk", "Zendesk"),
+    ("verkada", "Verkada"),
+    ("hightouch", "Hightouch"),
 ]
 
 # --- Ashby (very startup-heavy) ---
@@ -83,4 +85,13 @@ ASHBY = [
     ("ramp", "Ramp"),
     ("mercury", "Mercury"),
     ("notion", "Notion"),
+    # More AI startups (rotate interns seasonally)
+    ("cohere", "Cohere"),
+    ("character", "Character.AI"),
+    ("pinecone", "Pinecone"),
+    ("weaviate", "Weaviate"),
+    ("suno", "Suno"),
+    ("abridge", "Abridge"),
+    ("openevidence", "OpenEvidence"),
+    ("contextual", "Contextual AI"),
 ]

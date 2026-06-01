@@ -51,6 +51,8 @@ const GREENHOUSE = [
   { slug: "gusto",        name: "Gusto" },
   { slug: "pagerduty",    name: "PagerDuty" },
   { slug: "zendesk",      name: "Zendesk" },
+  { slug: "verkada",      name: "Verkada" },
+  { slug: "hightouch",    name: "Hightouch" },
 ];
 
 const ASHBY = [
@@ -83,6 +85,15 @@ const ASHBY = [
   { slug: "ramp",         name: "Ramp" },
   { slug: "mercury",      name: "Mercury" },
   { slug: "notion",       name: "Notion" },
+  // More AI startups (rotate interns seasonally)
+  { slug: "cohere",       name: "Cohere" },
+  { slug: "character",    name: "Character.AI" },
+  { slug: "pinecone",     name: "Pinecone" },
+  { slug: "weaviate",     name: "Weaviate" },
+  { slug: "suno",         name: "Suno" },
+  { slug: "abridge",      name: "Abridge" },
+  { slug: "openevidence", name: "OpenEvidence" },
+  { slug: "contextual",   name: "Contextual AI" },
 ];
 
 const LEVER = [
