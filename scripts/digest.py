@@ -4,9 +4,10 @@ from typing import List
 
 
 _SOURCE_LABELS = {
+    "simplify": "SimplifyJobs",
     "greenhouse": "Greenhouse",
     "ashby": "Ashby",
-    "jobspy": "Indeed/ZipRecruiter",
+    "jobspy": "Indeed",
     "muse": "The Muse",
 }
 

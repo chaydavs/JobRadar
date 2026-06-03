@@ -21,7 +21,7 @@ from datetime import datetime
 # Ensure scripts/ is on the path for sibling imports
 sys.path.insert(0, os.path.dirname(__file__))
 
-from sources import greenhouse, ashby, muse
+from sources import greenhouse, ashby, muse, simplify
 from sources.jobspy_source import fetch as fetch_jobspy
 from sources.base import is_blocked_company, requires_blocked_auth
 from scorer import score
@@ -74,16 +74,19 @@ def main():
     print("Fetching sources...")
     all_jobs = []
 
-    print("[1/4] Greenhouse")
+    print("[1/5] SimplifyJobs")
+    all_jobs += simplify.fetch(BACKFILL_DAYS)
+
+    print("[2/5] Greenhouse")
     all_jobs += greenhouse.fetch(BACKFILL_DAYS)
 
-    print("[2/4] Ashby")
+    print("[3/5] Ashby")
     all_jobs += ashby.fetch(BACKFILL_DAYS)
 
-    print("[3/4] jobspy (Indeed + ZipRecruiter)")
+    print("[4/5] jobspy (Indeed)")
     all_jobs += fetch_jobspy(BACKFILL_DAYS)
 
-    print("[4/4] The Muse")
+    print("[5/5] The Muse")
     all_jobs += muse.fetch(BACKFILL_DAYS)
 
     print(f"\nTotal roles (≤{BACKFILL_DAYS}d): {len(all_jobs)}")
