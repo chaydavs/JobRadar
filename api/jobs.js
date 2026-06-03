@@ -155,7 +155,7 @@ const DEFENSE_COMPANIES = [
   "mitre", "aerospace corporation", "ball aerospace", "maxar", "boeing",
   "huntington ingalls", "kbr", "jacobs", "battelle", "in-q-tel", "two six",
   "shield ai", "epirus", "vannevar", "rebellion defense", "govini",
-  "second front", "darpa", "air force", "space force", "homeland security",
+  "second front", "darpa", "orbis operations", "air force", "space force", "homeland security",
 ];
 
 function isBlockedCompany(company) {

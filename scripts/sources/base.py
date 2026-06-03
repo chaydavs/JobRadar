@@ -122,7 +122,7 @@ _DEFENSE_COMPANIES = [
     "mitre", "aerospace corporation", "ball aerospace", "maxar", "boeing",
     "northrop grumman", "huntington ingalls", "kbr", "jacobs", "battelle",
     "in-q-tel", "two six", "shield ai", "epirus", "vannevar", "rebellion defense",
-    "govini", "second front", "darpa",
+    "govini", "second front", "darpa", "orbis operations",
     "national security agency", "department of defense", "u.s. navy", "u.s. army",
     "air force", "space force", "homeland security",
 ]
