@@ -239,18 +239,102 @@ async function fetchLever({ slug, name }) {
   }
 }
 
+// --- SimplifyJobs GitHub README (high volume; relative dates → synthetic postedAt) ---
+const SIMPLIFY_URL = "https://raw.githubusercontent.com/SimplifyJobs/Summer2026-Internships/dev/README.md";
+const SIMPLIFY_SECTIONS = [
+  { start: "## 💻 Software Engineering", stop: "## 📱 Product Management" },
+  { start: "## 🤖 Data Science, AI & Machine Learning", stop: "## 📈 Quantitative Finance" },
+];
+
+function simplifyAgeToPostedAt(ageStr) {
+  const s = (ageStr || "").toLowerCase().trim();
+  const m = s.match(/(\d+)/);
+  if (!m) return null;
+  let days = parseInt(m[1]);
+  if (s.includes("mo") || s.includes("month")) days *= 30;
+  else if (s.includes("w")) days *= 7;
+  else if (s.includes("yr") || s.includes("year")) days *= 365;
+  // "h"/"d"/"today" → days as-is (today/0 → 0)
+  return new Date(Date.now() - days * 86400000).toISOString();
+}
+
+function parseSimplifySection(content) {
+  const rows = [];
+  let lastCompany = "";
+  const rowRegex = /<tr>([\s\S]*?)<\/tr>/g;
+  let rm;
+  while ((rm = rowRegex.exec(content)) !== null) {
+    const row = rm[1];
+    if (row.includes("🔒")) continue; // 🔒 closed
+    const tds = [];
+    const tdRegex = /<td>([\s\S]*?)<\/td>/g;
+    let tm;
+    while ((tm = tdRegex.exec(row)) !== null) tds.push(tm[1]);
+    if (tds.length < 5) continue;
+
+    const companyMatch = tds[0].match(/<strong><a[^>]*>([^<]+)<\/a><\/strong>/);
+    const company = companyMatch ? companyMatch[1].trim() : (tds[0].includes("↳") ? lastCompany : "");
+    if (companyMatch) lastCompany = company;
+    if (!company) continue;
+
+    const role = tds[1].replace(/<[^>]+>/g, "").trim();
+    const location = tds[2].replace(/<[^>]+>/g, "").trim();
+    const age = tds[4].replace(/<[^>]+>/g, "").trim();
+    const applyMatch = row.match(/href="(https:\/\/(?!simplify\.jobs|i\.imgur)[^"]+?)"/);
+    const link = applyMatch ? applyMatch[1].split("?utm_source")[0] : "";
+
+    const noSponsorship = row.includes("🛂");   // 🛂
+    const usCitizenOnly = row.includes("🇺🇸"); // 🇺🇸
+    const advancedDegree = row.includes("🎓");  // 🎓
+
+    if (isForeignLocation(location)) continue;
+    if (!isTechnical(role)) continue;
+    if (isBlockedCompany(company) || requiresBlockedAuth(role)) continue;
+
+    rows.push({
+      company, role, location, link,
+      postedAt: simplifyAgeToPostedAt(age),
+      source: "simplify",
+      noSponsorship, usCitizenOnly, advancedDegree,
+      eduLevel: advancedDegree ? "phd" : undefined, // parser fills the rest
+      id: `simplify-${company}-${role}`.replace(/\W/g, "").slice(0, 60),
+    });
+  }
+  return rows;
+}
+
+async function fetchSimplify() {
+  try {
+    const res = await fetch(SIMPLIFY_URL, { signal: AbortSignal.timeout(10000) });
+    if (!res.ok) return [];
+    const md = await res.text();
+    const out = [];
+    for (const { start, stop } of SIMPLIFY_SECTIONS) {
+      const from = md.indexOf(start);
+      if (from === -1) continue;
+      const to = md.indexOf(stop, from + 1);
+      out.push(...parseSimplifySection(md.substring(from, to > 0 ? to : md.length)));
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
 export default async function handler(req, res) {
-  // Deduplicate by company+role after aggregating all sources
-  const [ghResults, ashbyResults, leverResults] = await Promise.all([
+  // Aggregate all sources (ATS = real dates, SimplifyJobs = volume)
+  const [ghResults, ashbyResults, leverResults, simplifyResults] = await Promise.all([
     Promise.all(GREENHOUSE.map(fetchGreenhouse)),
     Promise.all(ASHBY.map(fetchAshby)),
     Promise.all(LEVER.map(fetchLever)),
+    fetchSimplify(),
   ]);
 
   const all = [
     ...ghResults.flat(),
     ...ashbyResults.flat(),
     ...leverResults.flat(),
+    ...simplifyResults,
   ];
 
   // Hard age cap — never surface stale (month-old) postings to the dashboard

@@ -65,9 +65,10 @@ export function normalizeAtsJobs(rawJobs) {
     ageDays: j.postedAt
       ? Math.floor((Date.now() - new Date(j.postedAt).getTime()) / 86400000)
       : 9999,
-    noSponsorship: false,
-    usCitizenOnly: false,
-    advancedDegree: /\bph\.?d\b|\bdoctoral\b/i.test(j.role),
-    eduLevel: detectEduLevel(j.role),
+    // SimplifyJobs supplies real auth flags; ATS sources default to false
+    noSponsorship: j.noSponsorship ?? false,
+    usCitizenOnly: j.usCitizenOnly ?? false,
+    advancedDegree: j.advancedDegree ?? /\bph\.?d\b|\bdoctoral\b/i.test(j.role),
+    eduLevel: j.eduLevel ?? detectEduLevel(j.role),
   }));
 }
