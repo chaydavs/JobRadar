@@ -75,5 +75,5 @@ RESUME_PROFILES = {
 }
 
 BONUS_KEYWORDS = [
-    "remote", "python", "aws", "docker", "flask", "supabase", "postgresql", "startup",
+    "remote", "python", "aws", "docker", "flask", "api", "supabase", "postgresql", "startup",
 ]
