@@ -1,14 +1,14 @@
 # Job Radar 🎯
 
-Daily internship match feed. Pulls from [SimplifyJobs/Summer2026-Internships](https://github.com/SimplifyJobs/Summer2026-Internships), scores against 3 resume profiles, and emails you the top matches every morning.
+Daily internship match feed. Aggregates multiple job boards, scores against 5 resume profiles, and emails you the top matches every morning.
 
 ## Two Parts
 
 ### 1. Dashboard (Vercel)
-A React app you open in your browser. Fetches live data from GitHub, scores and ranks jobs, shows apply links.
+A React app you open in your browser. Fetches live listings from Greenhouse, Ashby, Lever, and SimplifyJobs, scores and ranks jobs, shows apply links.
 
 ### 2. Daily Email (GitHub Actions)
-A Python script that runs every morning at 8am ET, finds new jobs posted in the last 2 days, scores them, and emails you the top 20 matches.
+A Python script that runs every morning at 8am ET. It pulls from SimplifyJobs, Greenhouse, Ashby, jobspy (Indeed), and The Muse, prefers jobs posted in the last day (backfilling from the last 7 if fresh listings are sparse), scores them, and emails you the top 10 curated picks.
 
 ---
 
@@ -59,15 +59,17 @@ python scripts/daily_digest.py
 
 ## Resume Profiles
 
-The matcher scores jobs against 3 keyword profiles extracted from your resumes:
+The matcher scores jobs against 5 keyword profiles extracted from your resumes:
 
 | Profile | Matches On |
 |---------|-----------|
-| AI/ML | machine learning, NLP, LLM, TensorFlow, Claude, inference, agents |
-| BI/Ops | analytics, Power BI, SQL, dashboards, CRM, ETL, pipeline |
-| Data Science | statistics, modeling, geospatial, optimization, research |
+| AI/ML Engineer | machine learning, NLP, LLM, PyTorch, Claude, RAG, MCP, agents |
+| SWE / Full-Stack | React, Next.js, Flask, Django, TypeScript, REST API, Supabase |
+| Data Engineering | ETL, Spark, Airflow, dbt, geospatial, AWS ECS/Fargate, pipelines |
+| BI & Operations | analytics, Power BI, SQL, dashboards, CRM, Slate, reporting |
+| Data Science Research | statistics, modeling, optimization, Bayesian, forecasting, research |
 
-Edit `RESUME_PROFILES` in `src/App.jsx` (dashboard) or `scripts/daily_digest.py` (email) to adjust keywords.
+`src/config/profiles.js` is the **source of truth** (used by the dashboard). `scripts/profiles.py` is a manual mirror used by the email script — edit both to keep them in sync.
 
 ## Config
 
@@ -75,6 +77,6 @@ Environment variables for the email script:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `MAX_AGE_DAYS` | 2 | Only include jobs posted within this many days |
+| `MAX_AGE_DAYS` | 1 | Preferred freshness window; the script backfills up to 7 days if fewer than 10 fresh picks are found |
 | `MIN_SCORE` | 15 | Minimum match score to include |
 | `RECIPIENT_EMAIL` | chay@vt.edu | Where to send the digest |
