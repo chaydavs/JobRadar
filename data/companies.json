@@ -903,5 +903,23 @@
     "name": "Plaid",
     "ats": "lever",
     "slug": "plaid"
+  },
+  {
+    "name": "Cantor Fitzgerald",
+    "ats": "oracle",
+    "host": "hdow.fa.us6.oraclecloud.com",
+    "site": "CX_1003"
+  },
+  {
+    "name": "Goldman Sachs",
+    "ats": "oracle",
+    "host": "hdpc.fa.us2.oraclecloud.com",
+    "site": "CampusHiring"
+  },
+  {
+    "name": "SCI",
+    "ats": "oracle",
+    "host": "hcri.fa.em2.oraclecloud.com",
+    "site": "CX_1"
   }
 ]

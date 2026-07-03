@@ -4,10 +4,12 @@ Job Radar — Daily email digest of new internship matches.
 Runs via GitHub Actions cron at 8am ET.
 
 Sources (all return real posting timestamps):
-  - Greenhouse — public job board API (curated company list, no key)
-  - Ashby      — public job board API (curated company list, no key)
-  - jobspy     — scrapes Indeed + ZipRecruiter (requires: pip install python-jobspy)
-  - The Muse   — free API, no key needed
+  - SimplifyJobs — Summer2026-Internships GitHub README (high volume)
+  - Greenhouse   — public job board API (curated company list, no key)
+  - Ashby        — public job board API (curated company list, no key)
+  - Oracle       — Recruiting Cloud CE API for enterprise/finance tenants (no key)
+  - jobspy       — scrapes Indeed (requires: pip install python-jobspy)
+  - The Muse     — free API, no key needed
 """
 
 import os
@@ -21,7 +23,7 @@ from datetime import datetime
 # Ensure scripts/ is on the path for sibling imports
 sys.path.insert(0, os.path.dirname(__file__))
 
-from sources import greenhouse, ashby, muse, simplify
+from sources import greenhouse, ashby, muse, simplify, oracle
 from sources.jobspy_source import fetch as fetch_jobspy
 from sources.base import is_blocked_company, requires_blocked_auth
 from scorer import score
@@ -74,19 +76,22 @@ def main():
     print("Fetching sources...")
     all_jobs = []
 
-    print("[1/5] SimplifyJobs")
+    print("[1/6] SimplifyJobs")
     all_jobs += simplify.fetch(BACKFILL_DAYS)
 
-    print("[2/5] Greenhouse")
+    print("[2/6] Greenhouse")
     all_jobs += greenhouse.fetch(BACKFILL_DAYS)
 
-    print("[3/5] Ashby")
+    print("[3/6] Ashby")
     all_jobs += ashby.fetch(BACKFILL_DAYS)
 
-    print("[4/5] jobspy (Indeed)")
+    print("[4/6] Oracle")
+    all_jobs += oracle.fetch(BACKFILL_DAYS)
+
+    print("[5/6] jobspy (Indeed)")
     all_jobs += fetch_jobspy(BACKFILL_DAYS)
 
-    print("[5/5] The Muse")
+    print("[6/6] The Muse")
     all_jobs += muse.fetch(BACKFILL_DAYS)
 
     print(f"\nTotal roles (≤{BACKFILL_DAYS}d): {len(all_jobs)}")

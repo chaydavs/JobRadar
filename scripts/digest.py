@@ -7,6 +7,7 @@ _SOURCE_LABELS = {
     "simplify": "SimplifyJobs",
     "greenhouse": "Greenhouse",
     "ashby": "Ashby",
+    "oracle": "Oracle",
     "jobspy": "Indeed",
     "muse": "The Muse",
 }
