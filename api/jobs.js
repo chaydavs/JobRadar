@@ -243,8 +243,10 @@ async function fetchSimplify() {
   }
 }
 
-export default async function handler(req, res) {
-  // Aggregate all sources (ATS = real dates, SimplifyJobs = volume)
+// Live aggregation across all sources (ATS = real dates, SimplifyJobs = volume).
+// Exported so scripts/build_feed.mjs can precompute the static dashboard feed
+// (public/jobs.json) using this exact logic — no second implementation to drift.
+export async function aggregateJobs() {
   const [ghResults, ashbyResults, leverResults, simplifyResults] = await Promise.all([
     Promise.all(GREENHOUSE.map(fetchGreenhouse)),
     Promise.all(ASHBY.map(fetchAshby)),
@@ -265,7 +267,7 @@ export default async function handler(req, res) {
 
   // Drop stale + defense/govt companies, dedup by company::role, attach recruiter link
   const seen = new Set();
-  const jobs = all.filter(j => {
+  return all.filter(j => {
     if (isBlockedCompany(j.company)) return false;
     const ageDays = j.postedAt ? (now - new Date(j.postedAt).getTime()) / 86400000 : 9999;
     if (ageDays > MAX_AGE_DAYS) return false;
@@ -277,7 +279,10 @@ export default async function handler(req, res) {
     ...j,
     recruiterSearch: linkedinRecruiterSearch(j.company),
   }));
+}
 
+export default async function handler(req, res) {
+  const jobs = await aggregateJobs();
   res.setHeader("Cache-Control", "s-maxage=1800, stale-while-revalidate=3600");
   res.json({ jobs, fetchedAt: new Date().toISOString(), count: jobs.length });
 }

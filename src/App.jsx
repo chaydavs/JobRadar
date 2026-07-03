@@ -3,11 +3,10 @@ import { RESUME_PROFILES, EDU_COLORS } from "./config/profiles.js";
 import { normalizeAtsJobs, scoreAllJobs } from "./lib/parser.js";
 import { loadApplications, toggleApplication, pullFromSupabase } from "./lib/storage.js";
 import { getCachedJobs, setCachedJobs, formatCacheTime } from "./lib/cache.js";
+import { fetchJobFeed } from "./lib/feed.js";
 import { ErrorBoundary } from "./components/ErrorBoundary.jsx";
 import { JobCard } from "./components/JobCard.jsx";
 import { ApplicationDashboard } from "./components/ApplicationDashboard.jsx";
-
-const JOBS_API = "/api/jobs";
 
 const PROFILE_SHORT = {
   "AI/ML Engineer":        "AI/ML",
@@ -53,9 +52,7 @@ function JobMatcher() {
     setError(null);
     if (!getCachedJobs()) setLoading(true);
     try {
-      const res = await fetch(JOBS_API);
-      if (!res.ok) throw new Error("Failed to fetch jobs");
-      const { jobs: raw } = await res.json();
+      const raw = await fetchJobFeed(forceRefresh);
       const scored = scoreAllJobs(normalizeAtsJobs(raw));
       setJobs(scored);
       setCachedJobs(scored);
