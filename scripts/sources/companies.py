@@ -1,96 +1,46 @@
 """
 Curated company lists for ATS job board scraping.
-Mirror of the lists in api/jobs.js — keep roughly in sync.
-All slugs verified live as of 2026-05-31.
 
-To add a company: find its ATS slug in the careers URL.
+Single source of truth is data/companies.json at the repo root, shared with the
+dashboard (api/jobs.js) so the two pipelines never drift. This module just loads
+that registry and groups it by ATS for the fetchers.
+
+Grow the registry with:  python scripts/discover_companies.py
+Manually:  add {"name", "ats", "slug"} to data/companies.json.
   Greenhouse: boards.greenhouse.io/{slug}
   Ashby:      jobs.ashbyhq.com/{slug}
+  Lever:      jobs.lever.co/{slug}
 """
 
-# --- Greenhouse ---
-GREENHOUSE = [
-    # Big tech / scale-ups
-    ("openai", "OpenAI"),
-    ("anthropic", "Anthropic"),
-    ("discord", "Discord"),
-    ("airbnb", "Airbnb"),
-    ("coinbase", "Coinbase"),
-    ("databricks", "Databricks"),
-    ("doordash", "DoorDash"),
-    ("cloudflare", "Cloudflare"),
-    ("mongodb", "MongoDB"),
-    ("datadog", "Datadog"),
-    ("robinhood", "Robinhood"),
-    ("hashicorp", "HashiCorp"),
-    ("hubspot", "HubSpot"),
-    ("twilio", "Twilio"),
-    ("elastic", "Elastic"),
-    ("stripe", "Stripe"),
-    ("instacart", "Instacart"),
-    ("asana", "Asana"),
-    ("gitlab", "GitLab"),
-    ("samsara", "Samsara"),
-    ("airtable", "Airtable"),
-    # Startups (well-funded, hire interns)
-    ("brex", "Brex"),
-    ("plaid", "Plaid"),
-    ("chime", "Chime"),
-    ("scaleai", "Scale AI"),
-    ("affirm", "Affirm"),
-    ("flexport", "Flexport"),
-    ("faire", "Faire"),
-    ("webflow", "Webflow"),
-    ("figma", "Figma"),
-    ("temporal", "Temporal"),
-    ("cockroachlabs", "CockroachDB"),
-    ("starburst", "Starburst"),
-    ("miro", "Miro"),
-    ("gusto", "Gusto"),
-    ("pagerduty", "PagerDuty"),
-    ("zendesk", "Zendesk"),
-    ("verkada", "Verkada"),
-    ("hightouch", "Hightouch"),
-]
+import json
+from pathlib import Path
 
-# --- Ashby (very startup-heavy) ---
-ASHBY = [
-    # AI startups
-    ("perplexity", "Perplexity"),
-    ("cognition", "Cognition"),
-    ("baseten", "Baseten"),
-    ("sierra", "Sierra"),
-    ("decagon", "Decagon"),
-    ("elevenlabs", "ElevenLabs"),
-    ("writer", "Writer"),
-    ("harvey", "Harvey"),
-    ("modal", "Modal"),
-    ("langchain", "LangChain"),
-    ("unstructured", "Unstructured"),
-    ("vapi", "Vapi"),
-    # Dev tools / infra startups
-    ("vercel", "Vercel"),
-    ("linear", "Linear"),
-    ("retool", "Retool"),
-    ("replit", "Replit"),
-    ("mintlify", "Mintlify"),
-    ("browserbase", "Browserbase"),
-    ("supabase", "Supabase"),
-    ("posthog", "PostHog"),
-    ("resend", "Resend"),
-    ("dbtlabs", "dbt Labs"),
-    ("cal", "Cal.com"),
-    # Fintech / other startups
-    ("ramp", "Ramp"),
-    ("mercury", "Mercury"),
-    ("notion", "Notion"),
-    # More AI startups (rotate interns seasonally)
-    ("cohere", "Cohere"),
-    ("character", "Character.AI"),
-    ("pinecone", "Pinecone"),
-    ("weaviate", "Weaviate"),
-    ("suno", "Suno"),
-    ("abridge", "Abridge"),
-    ("openevidence", "OpenEvidence"),
-    ("contextual", "Contextual AI"),
-]
+_REGISTRY_PATH = Path(__file__).resolve().parents[2] / "data" / "companies.json"
+
+
+def _registry():
+    try:
+        return json.loads(_REGISTRY_PATH.read_text())
+    except (OSError, json.JSONDecodeError) as e:
+        print(f"  [companies] failed to load {_REGISTRY_PATH}: {e}")
+        return []
+
+
+def _load(ats: str):
+    """Return [(slug, name), ...] for a slug-based ATS from the shared registry."""
+    return [(c["slug"], c["name"]) for c in _registry() if c.get("ats") == ats and c.get("slug")]
+
+
+def _load_oracle():
+    """Oracle uses per-tenant {host, site} instead of a slug."""
+    return [
+        {"name": c["name"], "host": c["host"], "site": c["site"]}
+        for c in _registry()
+        if c.get("ats") == "oracle" and c.get("host") and c.get("site")
+    ]
+
+
+GREENHOUSE = _load("greenhouse")
+ASHBY = _load("ashby")
+LEVER = _load("lever")
+ORACLE = _load_oracle()

@@ -4,100 +4,19 @@
  * from Greenhouse, Ashby, and Lever public job board APIs.
  * All return real posting timestamps — no stale date issues. No API keys required.
  *
- * To add more companies: find their ATS slug in their careers URL and append to the list.
- *   Greenhouse: boards.greenhouse.io/{slug}  →  add { slug, name } to GREENHOUSE
- *   Ashby:      jobs.ashbyhq.com/{slug}      →  add { slug, name } to ASHBY
- *   Lever:      jobs.lever.co/{slug}         →  add { slug, name } to LEVER
+ * Company lists live in data/companies.json (shared with the Python email pipeline).
+ * To add companies: add { name, ats, slug } there, or run scripts/discover_companies.py.
  */
+import companiesRegistry from "../data/companies.json" with { type: "json" };
 
-const GREENHOUSE = [
-  // Big tech / scale-ups
-  { slug: "openai",       name: "OpenAI" },
-  { slug: "anthropic",    name: "Anthropic" },
-  { slug: "discord",      name: "Discord" },
-  { slug: "airbnb",       name: "Airbnb" },
-  { slug: "coinbase",     name: "Coinbase" },
-  { slug: "databricks",   name: "Databricks" },
-  { slug: "doordash",     name: "DoorDash" },
-  { slug: "cloudflare",   name: "Cloudflare" },
-  { slug: "mongodb",      name: "MongoDB" },
-  { slug: "datadog",      name: "Datadog" },
-  { slug: "robinhood",    name: "Robinhood" },
-  { slug: "hashicorp",    name: "HashiCorp" },
-  { slug: "hubspot",      name: "HubSpot" },
-  { slug: "twilio",       name: "Twilio" },
-  { slug: "elastic",      name: "Elastic" },
-  { slug: "stripe",       name: "Stripe" },
-  { slug: "instacart",    name: "Instacart" },
-  { slug: "asana",        name: "Asana" },
-  { slug: "gitlab",       name: "GitLab" },
-  { slug: "samsara",      name: "Samsara" },
-  { slug: "airtable",     name: "Airtable" },
-  // Startups
-  { slug: "brex",         name: "Brex" },
-  { slug: "plaid",        name: "Plaid" },
-  { slug: "chime",        name: "Chime" },
-  { slug: "scaleai",      name: "Scale AI" },
-  { slug: "affirm",       name: "Affirm" },
-  { slug: "flexport",     name: "Flexport" },
-  { slug: "faire",        name: "Faire" },
-  { slug: "webflow",      name: "Webflow" },
-  { slug: "figma",        name: "Figma" },
-  { slug: "temporal",     name: "Temporal" },
-  { slug: "cockroachlabs", name: "CockroachDB" },
-  { slug: "starburst",    name: "Starburst" },
-  { slug: "miro",         name: "Miro" },
-  { slug: "gusto",        name: "Gusto" },
-  { slug: "pagerduty",    name: "PagerDuty" },
-  { slug: "zendesk",      name: "Zendesk" },
-  { slug: "verkada",      name: "Verkada" },
-  { slug: "hightouch",    name: "Hightouch" },
-];
-
-const ASHBY = [
-  // AI startups
-  { slug: "perplexity",   name: "Perplexity" },
-  { slug: "cognition",    name: "Cognition" },
-  { slug: "baseten",      name: "Baseten" },
-  { slug: "sierra",       name: "Sierra" },
-  { slug: "decagon",      name: "Decagon" },
-  { slug: "elevenlabs",   name: "ElevenLabs" },
-  { slug: "writer",       name: "Writer" },
-  { slug: "harvey",       name: "Harvey" },
-  { slug: "modal",        name: "Modal" },
-  { slug: "langchain",    name: "LangChain" },
-  { slug: "unstructured", name: "Unstructured" },
-  { slug: "vapi",         name: "Vapi" },
-  // Dev tools / infra startups
-  { slug: "vercel",       name: "Vercel" },
-  { slug: "linear",       name: "Linear" },
-  { slug: "retool",       name: "Retool" },
-  { slug: "replit",       name: "Replit" },
-  { slug: "mintlify",     name: "Mintlify" },
-  { slug: "browserbase",  name: "Browserbase" },
-  { slug: "supabase",     name: "Supabase" },
-  { slug: "posthog",      name: "PostHog" },
-  { slug: "resend",       name: "Resend" },
-  { slug: "dbtlabs",      name: "dbt Labs" },
-  { slug: "cal",          name: "Cal.com" },
-  // Fintech / other startups
-  { slug: "ramp",         name: "Ramp" },
-  { slug: "mercury",      name: "Mercury" },
-  { slug: "notion",       name: "Notion" },
-  // More AI startups (rotate interns seasonally)
-  { slug: "cohere",       name: "Cohere" },
-  { slug: "character",    name: "Character.AI" },
-  { slug: "pinecone",     name: "Pinecone" },
-  { slug: "weaviate",     name: "Weaviate" },
-  { slug: "suno",         name: "Suno" },
-  { slug: "abridge",      name: "Abridge" },
-  { slug: "openevidence", name: "OpenEvidence" },
-  { slug: "contextual",   name: "Contextual AI" },
-];
-
-const LEVER = [
-  { slug: "plaid",        name: "Plaid" },   // most companies migrated off Lever; kept for resilience
-];
+// Company lists come from the shared registry (data/companies.json) so the dashboard
+// and the Python email pipeline stay in sync from ONE source. Grow it by running
+// `python scripts/discover_companies.py` (harvests YC + VC directories, probes live boards).
+const byAts = (ats) =>
+  companiesRegistry.filter(c => c.ats === ats).map(({ slug, name }) => ({ slug, name }));
+const GREENHOUSE = byAts("greenhouse");
+const ASHBY = byAts("ashby");
+const LEVER = byAts("lever");
 
 const SKIP_LOCATIONS = [
   "UK", "United Kingdom", "Canada", "France", "Germany", "Japan", "China",
@@ -147,15 +66,18 @@ function requiresBlockedAuth(title, description = "") {
 }
 
 // Defense / government contractors — roles almost always require clearance/citizenship
+// Keep in sync with scripts/sources/base.py _DEFENSE_COMPANIES
 const DEFENSE_COMPANIES = [
   "bigbear", "big bear", "teledyne", "flir", "saic", "leidos", "booz allen",
   "raytheon", "rtx", "lockheed", "northrop", "general dynamics", "l3harris",
   "l3 harris", "caci", "peraton", "mantech", "scientific research corporation",
   "anduril", "palantir", "parsons", "sierra nevada", "bae systems", "draper",
   "mitre", "aerospace corporation", "ball aerospace", "maxar", "boeing",
-  "huntington ingalls", "kbr", "jacobs", "battelle", "in-q-tel", "two six",
-  "shield ai", "epirus", "vannevar", "rebellion defense", "govini",
-  "second front", "darpa", "orbis operations", "air force", "space force", "homeland security",
+  "northrop grumman", "huntington ingalls", "kbr", "jacobs", "battelle",
+  "in-q-tel", "two six", "shield ai", "epirus", "vannevar", "rebellion defense",
+  "govini", "second front", "darpa", "orbis operations", "saronic",
+  "national security agency", "department of defense", "u.s. navy", "u.s. army",
+  "air force", "space force", "homeland security",
 ];
 
 function isBlockedCompany(company) {

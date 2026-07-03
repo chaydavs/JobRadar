@@ -1,5 +1,5 @@
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass
@@ -114,6 +114,7 @@ def requires_blocked_auth(title: str, description: str = "") -> bool:
 # Defense / government contractors — roles almost always require clearance or
 # citizenship, so block by company name (jobspy descriptions are often empty,
 # so text scanning alone misses these).
+# Keep in sync with api/jobs.js DEFENSE_COMPANIES.
 _DEFENSE_COMPANIES = [
     "bigbear", "big bear", "teledyne", "flir", "saic", "leidos", "booz allen",
     "raytheon", "rtx", "lockheed", "northrop", "general dynamics", "l3harris",
@@ -122,7 +123,7 @@ _DEFENSE_COMPANIES = [
     "mitre", "aerospace corporation", "ball aerospace", "maxar", "boeing",
     "northrop grumman", "huntington ingalls", "kbr", "jacobs", "battelle",
     "in-q-tel", "two six", "shield ai", "epirus", "vannevar", "rebellion defense",
-    "govini", "second front", "darpa", "orbis operations",
+    "govini", "second front", "darpa", "orbis operations", "saronic",
     "national security agency", "department of defense", "u.s. navy", "u.s. army",
     "air force", "space force", "homeland security",
 ]
