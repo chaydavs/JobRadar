@@ -8,7 +8,7 @@ Daily internship match feed. Aggregates multiple job boards, scores against 5 re
 A React app you open in your browser. Fetches live listings from Greenhouse, Ashby, Lever, and SimplifyJobs, scores and ranks jobs, shows apply links.
 
 ### 2. Daily Email (GitHub Actions)
-A Python script that runs every morning at 8am ET. It pulls from SimplifyJobs, Greenhouse, Ashby, jobspy (Indeed), and The Muse, prefers jobs posted in the last day (backfilling from the last 7 if fresh listings are sparse), scores them, and emails you the top 10 curated picks.
+A Python script that runs every morning at 8am ET. It pulls from SimplifyJobs, Greenhouse, Ashby, Oracle, jobspy (Indeed), and The Muse, scores them, and emails you a **dashboard nudge**: how many roles are newly posted in the last 24h, a teaser of the freshest few, and a button straight to the dashboard where the full pool lives. (It deliberately does not re-send a curated list — that caused the same picks to repeat day after day.)
 
 ---
 
@@ -77,6 +77,7 @@ Environment variables for the email script:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `MAX_AGE_DAYS` | 1 | Preferred freshness window; the script backfills up to 7 days if fewer than 10 fresh picks are found |
-| `MIN_SCORE` | 15 | Minimum match score to include |
+| `MAX_AGE_DAYS` | 1 | "New in the last 24h" window shown in the email headline (wider ~7d pool is counted as "on your dashboard") |
+| `MIN_SCORE` | 15 | Minimum match score to count |
 | `RECIPIENT_EMAIL` | chay@vt.edu | Where to send the digest |
+| `DASHBOARD_URL` | job-radar-eta.vercel.app | Where the email's "Open Dashboard" button links |

@@ -29,11 +29,12 @@ Multi-source aggregation. The two pipelines pull slightly different sets (see be
 - **Ashby** public job board API — companies from `data/companies.json`. Real timestamps, no key.
 - Company registry (`data/companies.json`, ~180 companies) is shared by both pipelines and grown via `scripts/discover_companies.py` (harvests the YC directory + probes live Greenhouse/Ashby boards).
 - **Lever** public API — dashboard only (currently just Plaid, kept for resilience).
+- **Oracle** Recruiting Cloud CE API — email only; enterprise/finance tenants need a `{host, site}` pair in `data/companies.json` (can't be slug-guessed). Real timestamps, no key.
 - **jobspy** (Indeed) — email only; requires `python-jobspy`. LinkedIn/ZipRecruiter excluded (block CI IPs).
 - **The Muse** free API — email only, no key.
 
 Dashboard (`api/jobs.js`): Greenhouse + Ashby + Lever + Simplify.
-Email (`scripts/daily_digest.py`): Simplify + Greenhouse + Ashby + jobspy + Muse.
+Email (`scripts/daily_digest.py`): Simplify + Greenhouse + Ashby + Oracle + jobspy + Muse.
 
 ## Key config decisions
 
@@ -41,7 +42,7 @@ Email (`scripts/daily_digest.py`): Simplify + Greenhouse + Ashby + jobspy + Muse
 - Dashboard hard-caps listings at 21 days (`api/jobs.js`)
 - `MIN_SCORE = 15` — floor for email inclusion
 - `hideNoSponsorship = true` default in dashboard
-- Email sends the top 10 curated picks (`TARGET_PICKS`) daily at 8am ET via GitHub Actions
+- Email is a **dashboard nudge** (not a curated list): headlines the count of roles new in the last 24h + a teaser of the freshest few + an "Open Dashboard" button (`DASHBOARD_URL`, default `job-radar-eta.vercel.app`). Sent daily 8am ET via GitHub Actions. The old top-10 curation was dropped — being stateless, it re-sent the same high-scored picks every day.
 
 ## Tech stack
 

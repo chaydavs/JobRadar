@@ -28,4 +28,6 @@ jobs:
           RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
           MAX_AGE_DAYS: "1"
           MIN_SCORE: "15"
+          # Where the email's "Open Dashboard" button points (defaults to this in code)
+          DASHBOARD_URL: "https://job-radar-eta.vercel.app"
         run: python scripts/daily_digest.py

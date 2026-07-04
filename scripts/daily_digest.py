@@ -58,19 +58,21 @@ def send_email(html_content: str, recipient: str, subject: str) -> bool:
         return False
 
 
-TARGET_PICKS = 10       # curated jobs per digest
-FRESH_DAYS = 1          # preferred recency
-BACKFILL_DAYS = 7       # widen to this if fewer than TARGET_PICKS are fresh
+FRESH_DAYS = 1          # "new in the last 24h" window shown in the email headline
+BACKFILL_DAYS = 7       # wider pool counted as "on your dashboard right now"
+DEFAULT_DASHBOARD_URL = "https://job-radar-eta.vercel.app"
 
 
 def main():
-    # Preferred fresh window (default 1d); we fetch a wider pool and backfill.
+    # "New" window (default 1d); we still scan a wider pool to report the dashboard total.
     fresh_days = int(os.environ.get("MAX_AGE_DAYS", str(FRESH_DAYS)))
     recipient = os.environ.get("RECIPIENT_EMAIL", "chay@vt.edu")
     min_score = int(os.environ.get("MIN_SCORE", "15"))
+    dashboard_url = os.environ.get("DASHBOARD_URL", DEFAULT_DASHBOARD_URL)
 
     print(f"Job Radar — {datetime.now().strftime('%Y-%m-%d %H:%M')}")
-    print(f"Config: fresh={fresh_days}d  backfill≤{BACKFILL_DAYS}d  min_score={min_score}  recipient={recipient}\n")
+    print(f"Config: new≤{fresh_days}d  pool≤{BACKFILL_DAYS}d  min_score={min_score}  recipient={recipient}")
+    print(f"Dashboard: {dashboard_url}\n")
 
     # --- Fetch a wide pool (up to BACKFILL_DAYS); we prefer fresh but backfill if sparse ---
     print("Fetching sources...")
@@ -139,33 +141,28 @@ def main():
             seen_keys.add(key)
             deduped.append(j)
 
-    # Adaptive curation: prefer fresh (<= fresh_days), backfill from the wider
-    # pool only if we don't have TARGET_PICKS fresh ones. Always freshest-first.
+    # The email is a nudge to the dashboard, not a curated list. It headlines the
+    # genuinely-new (<= fresh_days) roles so nothing is missed, and lets the dashboard
+    # hold the full pool. Because only fresh roles are teased, the email changes daily
+    # instead of re-sending the same top-scored picks (the old repeat problem).
     fresh = [j for j in deduped if j["age_days"] <= fresh_days]
-    older = [j for j in deduped if j["age_days"] > fresh_days]  # already score-sorted
 
-    if len(fresh) >= TARGET_PICKS:
-        top = fresh[:TARGET_PICKS]
-        window_note = f"last {fresh_days}d"
-    else:
-        backfill = older[:TARGET_PICKS - len(fresh)]
-        top = fresh + backfill
-        window_note = f"{len(fresh)} from last {fresh_days}d + {len(backfill)} recent"
+    print(f"Matches above {min_score}pts: {len(deduped)} ({len(fresh)} new ≤{fresh_days}d)")
+    for j in fresh[:5]:
+        print(f"  [NEW] [{j['score']}pts] [{j['profile']}] [{j['source']}] {j['role']} @ {j['company']}")
 
-    print(f"Matches above {min_score}pts: {len(deduped)} ({len(fresh)} fresh ≤{fresh_days}d)")
-    print(f"Sending top {len(top)} ({window_note})\n")
-
-    for j in top:
-        tag = "FRESH" if j["age_days"] <= fresh_days else f"{int(j['age_days'])}d"
-        print(f"  [{j['score']}pts] [{tag}] [{j['profile']}] [{j['source']}] {j['role']} @ {j['company']}")
-
-    if top:
-        date_str = datetime.now().strftime("%b %d, %Y")
-        subject = f"🎯 Job Radar — {len(top)} curated picks ({date_str})"
-        html = build_html(top, len(deduped), date_str)
-        send_email(html, recipient, subject)
-    else:
+    if not deduped:
         print("\nNo matching roles in the last week. No email sent.")
+        return
+
+    date_str = datetime.now().strftime("%b %d, %Y")
+    if fresh:
+        plural = "es" if len(fresh) != 1 else ""
+        subject = f"🎯 Job Radar — {len(fresh)} new match{plural} today ({date_str})"
+    else:
+        subject = f"🎯 Job Radar — your daily check-in ({date_str})"
+    html = build_html(fresh, len(deduped), date_str, dashboard_url)
+    send_email(html, recipient, subject)
 
 
 if __name__ == "__main__":
